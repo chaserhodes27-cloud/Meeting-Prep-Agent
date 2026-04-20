@@ -1,6 +1,6 @@
 # Meeting Prep Agent 🤝
 
-An AI agent that automatically researches your meeting attendees and generates a structured briefing doc before you walk into any meeting.
+An AI agent that automatically researches your meeting attendees and generates a structured briefing doc before you walk into any meeting. Available as both a **web UI** and a **CLI**.
 
 ## What it does
 - Parses meeting invites (.ics files or pasted text)
@@ -10,46 +10,29 @@ An AI agent that automatically researches your meeting attendees and generates a
 
 ## Demo
 
-```markdown
-# Meeting Briefing: Meeting with Robyn Frye
-
-## Meeting Overview
-- **Date/Time:** Today at 12:30pm
-- **Attendees:** Robyn Frye (robyn.frye@workday.com)
-
-## Attendees
-
-### Robyn Frye
-- **Role/Company:** Principal, Frye Consulting; associated with Workday
-- **Background:** Active on LinkedIn sharing Workday content; supported
-  regional growth initiatives from Workday's Singapore office
-
-## Company News
-
-### Workday (workday.com)
-- Aneel Bhusri returned as CEO, focused on AI/technology leadership
-- April 2026: Workday Government Research released findings on federal
-  finance teams and outdated tech risk
-
-## Suggested Talking Points
-- Workday's AI & digital labor strategy — how it affects Robyn's work
-- Regional growth initiatives she's supporting
-- Leadership transition shaping internal priorities
-```
+The web UI is a dark-themed single-page app where you paste meeting details (or upload a `.ics` file) and click **Generate Briefing**. A live status log shows each research step as it runs — searching LinkedIn, fetching company news, generating with Claude — then the finished briefing renders as formatted markdown on the same page. A download button saves the `.md` file locally.
 
 ## Tech Stack
-- Python
-- Anthropic Claude API (claude-sonnet-4-5)
+- Python + Flask
+- Anthropic Claude API (claude-sonnet-4-6)
 - Tavily Search API
 - icalendar
 
 ## Setup
 1. Clone the repo
-2. Install dependencies: `pip install -r requirements.txt`
+2. Install dependencies: `pip3 install -r requirements.txt`
 3. Copy `.env.example` to `.env` and add your API keys
 4. Run it!
 
 ## Usage
+
+### Web UI (recommended)
+```bash
+python3 app.py
+```
+Then open [http://localhost:5001](http://localhost:5001) in your browser.
+
+### CLI
 ```bash
 # With a .ics calendar file
 python3 main.py --input meeting.ics

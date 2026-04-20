@@ -4,7 +4,8 @@
       "Bash(pip install *)",
       "Bash(python3 -m pip install -r requirements.txt -q)",
       "Bash(python3 main.py --input test_meeting.ics)",
-      "Bash(python3 -c ' *)"
+      "Bash(python3 -c ' *)",
+      "Bash(pip3 install *)"
     ]
   }
 }

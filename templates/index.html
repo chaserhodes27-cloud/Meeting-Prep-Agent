@@ -1,0 +1,686 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Meeting Prep Agent</title>
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --purple: #7c3aed;
+      --blue: #2563eb;
+      --grad: linear-gradient(135deg, #7c3aed 0%, #2563eb 100%);
+      --grad-text: linear-gradient(135deg, #a78bfa 0%, #60a5fa 100%);
+      --surface: rgba(255, 255, 255, 0.035);
+      --border: rgba(255, 255, 255, 0.07);
+      --border-focus: rgba(167, 139, 250, 0.5);
+      --text-primary: #f1f0f5;
+      --text-muted: rgba(255, 255, 255, 0.38);
+      --text-soft: rgba(255, 255, 255, 0.6);
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #0f0f0f;
+      color: var(--text-primary);
+      min-height: 100vh;
+      padding: 2.5rem 1rem 5rem;
+      overflow-x: hidden;
+    }
+
+    /* Ambient background glows */
+    .bg-orb {
+      position: fixed;
+      border-radius: 50%;
+      pointer-events: none;
+      z-index: 0;
+      filter: blur(90px);
+    }
+    .bg-orb-1 {
+      width: 560px; height: 560px;
+      background: rgba(124, 58, 237, 0.11);
+      top: -180px; left: -120px;
+      animation: orbDrift1 18s ease-in-out infinite;
+    }
+    .bg-orb-2 {
+      width: 420px; height: 420px;
+      background: rgba(37, 99, 235, 0.09);
+      bottom: -120px; right: -80px;
+      animation: orbDrift2 22s ease-in-out infinite;
+    }
+
+    @keyframes orbDrift1 {
+      0%,  100% { transform: translate(0, 0)   scale(1);    opacity: 0.9; }
+      33%        { transform: translate(60px, 40px) scale(1.1); opacity: 1;   }
+      66%        { transform: translate(-30px, 70px) scale(0.95); opacity: 0.75; }
+    }
+
+    @keyframes orbDrift2 {
+      0%,  100% { transform: translate(0, 0)    scale(1);    opacity: 0.8; }
+      40%        { transform: translate(-50px, -40px) scale(1.12); opacity: 1;   }
+      70%        { transform: translate(30px, -60px)  scale(0.9);  opacity: 0.65; }
+    }
+
+    .container {
+      max-width: 760px;
+      margin: 0 auto;
+      position: relative;
+      z-index: 1;
+    }
+
+    /* Header */
+    header {
+      text-align: center;
+      margin-bottom: 2.25rem;
+      animation: fadeUp .5s ease both;
+    }
+
+    .header-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      font-size: 0.7rem;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      border: 1px solid var(--border);
+      border-radius: 99px;
+      padding: 0.3rem 0.85rem;
+      margin-bottom: 1rem;
+      background: var(--surface);
+      position: relative;
+      animation: badgePulse 3s ease-in-out infinite;
+    }
+
+    @keyframes badgePulse {
+      0%,  100% { box-shadow: 0 0 0px 0px rgba(167, 139, 250, 0);   border-color: rgba(255,255,255,0.07); }
+      50%        { box-shadow: 0 0 10px 3px rgba(167, 139, 250, 0.18); border-color: rgba(167, 139, 250, 0.35); }
+    }
+
+    .header-badge span { color: #a78bfa; }
+
+    header h1 {
+      font-size: 2rem;
+      font-weight: 700;
+      letter-spacing: -0.03em;
+      background: var(--grad-text);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      line-height: 1.2;
+    }
+
+    header p {
+      color: var(--text-muted);
+      margin-top: 0.6rem;
+      font-size: 0.9rem;
+    }
+
+    /* Glass card */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      padding: 1.75rem;
+      margin-bottom: 1.25rem;
+      backdrop-filter: blur(24px);
+      -webkit-backdrop-filter: blur(24px);
+      box-shadow:
+        0 0 0 1px rgba(255,255,255,0.02) inset,
+        0 20px 60px rgba(0, 0, 0, 0.4);
+    }
+
+    /* Tabs */
+    .tabs {
+      display: flex;
+      background: rgba(0, 0, 0, 0.3);
+      border-radius: 10px;
+      padding: 4px;
+      margin-bottom: 1.25rem;
+      gap: 4px;
+      border: 1px solid var(--border);
+    }
+
+    .tab {
+      flex: 1;
+      padding: 0.5rem;
+      border: none;
+      border-radius: 7px;
+      background: transparent;
+      font-size: 0.85rem;
+      font-weight: 500;
+      color: var(--text-muted);
+      cursor: pointer;
+      transition: all .2s ease;
+    }
+
+    .tab.active {
+      background: var(--grad);
+      color: #fff;
+      box-shadow: 0 2px 12px rgba(124, 58, 237, 0.35);
+    }
+
+    /* Panels */
+    .panel { display: none; }
+    .panel.active { display: block; }
+
+    textarea {
+      width: 100%;
+      height: 160px;
+      background: rgba(0, 0, 0, 0.25);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 0.875rem 1rem;
+      font-size: 0.9rem;
+      font-family: inherit;
+      line-height: 1.65;
+      resize: vertical;
+      color: var(--text-primary);
+      outline: none;
+      transition: border-color .2s, box-shadow .2s;
+    }
+
+    textarea:focus {
+      border-color: var(--border-focus);
+      box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.15), 0 0 20px rgba(124, 58, 237, 0.08);
+    }
+
+    textarea::placeholder { color: var(--text-muted); }
+
+    /* File drop */
+    .file-drop {
+      border: 1.5px dashed rgba(255, 255, 255, 0.12);
+      border-radius: 10px;
+      padding: 2.75rem 1rem;
+      text-align: center;
+      cursor: pointer;
+      position: relative;
+      transition: all .2s ease;
+      background: rgba(0, 0, 0, 0.2);
+    }
+
+    .file-drop:hover, .file-drop.dragover {
+      border-color: rgba(167, 139, 250, 0.5);
+      background: rgba(124, 58, 237, 0.06);
+      box-shadow: 0 0 20px rgba(124, 58, 237, 0.08) inset;
+    }
+
+    .file-drop input[type="file"] {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      opacity: 0;
+      cursor: pointer;
+    }
+
+    .drop-icon { font-size: 1.75rem; margin-bottom: 0.6rem; }
+    .drop-hint { color: var(--text-muted); font-size: 0.875rem; }
+
+    .file-selected {
+      margin-top: 0.6rem;
+      font-size: 0.85rem;
+      font-weight: 500;
+      background: var(--grad-text);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    /* Error box */
+    .error-box {
+      display: none;
+      background: rgba(220, 38, 38, 0.08);
+      border: 1px solid rgba(220, 38, 38, 0.25);
+      color: #f87171;
+      border-radius: 8px;
+      padding: 0.75rem 1rem;
+      font-size: 0.85rem;
+      margin-top: 0.875rem;
+    }
+
+    /* Primary button */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.4rem;
+      padding: 0.7rem 1.4rem;
+      border-radius: 10px;
+      font-size: 0.9rem;
+      font-weight: 600;
+      border: none;
+      cursor: pointer;
+      transition: all .2s ease;
+    }
+
+    .btn-primary {
+      width: 100%;
+      margin-top: 1.1rem;
+      background: var(--grad);
+      color: #fff;
+      position: relative;
+      overflow: hidden;
+      letter-spacing: 0.01em;
+      box-shadow: 0 4px 20px rgba(124, 58, 237, 0.25);
+    }
+
+    /* Shimmer sweep on hover */
+    .btn-primary::after {
+      content: '';
+      position: absolute;
+      top: 0; left: -100%;
+      width: 60%; height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.18), transparent);
+      transition: left .45s ease;
+      pointer-events: none;
+    }
+
+    .btn-primary:hover:not(:disabled) {
+      box-shadow: 0 6px 30px rgba(124, 58, 237, 0.45);
+      transform: translateY(-1px);
+    }
+
+    .btn-primary:hover:not(:disabled)::after { left: 150%; }
+
+    .btn-primary:active:not(:disabled) {
+      transform: translateY(0);
+      box-shadow: 0 2px 12px rgba(124, 58, 237, 0.3);
+    }
+
+    .btn-primary:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+      box-shadow: none;
+    }
+
+    .btn-ghost {
+      background: rgba(255, 255, 255, 0.05);
+      color: var(--text-soft);
+      border: 1px solid var(--border);
+      font-size: 0.82rem;
+    }
+
+    .btn-ghost:hover {
+      background: rgba(255, 255, 255, 0.09);
+      color: var(--text-primary);
+    }
+
+    /* Loading */
+    #loading-section { display: none; text-align: center; }
+
+    .spinner-wrap {
+      position: relative;
+      width: 48px;
+      height: 48px;
+      margin: 0 auto 1.25rem;
+    }
+
+    .spinner {
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      border: 2.5px solid rgba(255,255,255,0.06);
+      border-top-color: #a78bfa;
+      border-right-color: #60a5fa;
+      animation: spin .8s linear infinite;
+    }
+
+    .spinner-glow {
+      position: absolute;
+      inset: -6px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(124,58,237,0.2) 0%, transparent 70%);
+      animation: pulse 1.8s ease-in-out infinite;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 0.4; transform: scale(1); }
+      50% { opacity: 1; transform: scale(1.1); }
+    }
+
+    .loading-label {
+      font-weight: 600;
+      font-size: 0.9rem;
+      color: var(--text-soft);
+      margin-bottom: 1.1rem;
+      letter-spacing: 0.01em;
+    }
+
+    .status-log {
+      text-align: left;
+      background: rgba(0, 0, 0, 0.3);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 0.875rem 1rem;
+      font-family: 'SF Mono', 'Menlo', 'Consolas', monospace;
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      line-height: 1.95;
+      max-height: 200px;
+      overflow-y: auto;
+    }
+
+    .status-log::-webkit-scrollbar { width: 4px; }
+    .status-log::-webkit-scrollbar-track { background: transparent; }
+    .status-log::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 4px; }
+
+    .log-line { animation: fadeUp .2s ease both; }
+    .log-line::before { content: '→ '; color: #a78bfa; }
+
+    /* Result */
+    #result-section { display: none; }
+
+    .result-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+      margin-bottom: 1.5rem;
+      padding-bottom: 1rem;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .result-title {
+      font-size: 0.78rem;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+    }
+
+    .result-actions { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+
+    /* Markdown output */
+    .md-body { font-size: 0.9rem; line-height: 1.78; color: rgba(255,255,255,0.82); }
+
+    .md-body h1 {
+      font-size: 1.3rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      padding-bottom: 0.75rem;
+      margin-bottom: 1.1rem;
+      background: var(--grad-text);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .md-body h2 {
+      font-size: 0.68rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: #a78bfa;
+      margin-top: 1.75rem;
+      margin-bottom: 0.6rem;
+    }
+
+    .md-body h3 {
+      font-size: 0.93rem;
+      font-weight: 600;
+      color: var(--text-primary);
+      margin-top: 1rem;
+      margin-bottom: 0.35rem;
+    }
+
+    .md-body ul { padding-left: 1.25rem; margin-bottom: 0.4rem; }
+
+    .md-body li { margin-bottom: 0.3rem; }
+
+    .md-body strong { color: #fff; font-weight: 600; }
+
+    .md-body hr {
+      border: none;
+      border-top: 1px solid var(--border);
+      margin: 1.25rem 0;
+    }
+
+    .md-body p { margin-bottom: 0.4rem; }
+
+    /* Fade-up animation — applied when sections come into view */
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(10px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .anim { animation: fadeUp .35s ease both; }
+
+    /* Mobile */
+    @media (max-width: 600px) {
+      body { padding: 1.5rem 0.75rem 4rem; }
+      .card { padding: 1.25rem; border-radius: 14px; }
+      header h1 { font-size: 1.6rem; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- Ambient glows -->
+<div class="bg-orb bg-orb-1"></div>
+<div class="bg-orb bg-orb-2"></div>
+
+<div class="container">
+
+  <header>
+    <div class="header-badge"><span>✦</span> AI-Powered</div>
+    <h1>Meeting Prep Agent</h1>
+    <p>Research your attendees and generate a structured briefing in seconds</p>
+  </header>
+
+  <!-- Input -->
+  <div class="card" id="input-section">
+    <div class="tabs">
+      <button class="tab active" onclick="switchTab('text')">Paste Text</button>
+      <button class="tab" onclick="switchTab('ics')">Upload .ics File</button>
+    </div>
+
+    <div id="panel-text" class="panel active">
+      <textarea id="meeting-text"
+        placeholder="Paste your meeting invite here&#10;&#10;e.g. &quot;Meeting with Sarah Chen (sarah@stripe.com) on Friday at 2pm to discuss Q2 roadmap&quot;"></textarea>
+    </div>
+
+    <div id="panel-ics" class="panel">
+      <div class="file-drop" id="file-drop">
+        <input type="file" id="ics-file" accept=".ics" onchange="handleFileSelect(this)">
+        <div class="drop-icon">📅</div>
+        <p class="drop-hint">Drag & drop your .ics file, or click to browse</p>
+        <div class="file-selected" id="file-name"></div>
+      </div>
+    </div>
+
+    <div class="error-box" id="error-box"></div>
+
+    <button class="btn btn-primary" id="generate-btn" onclick="startJob()">
+      Generate Briefing
+    </button>
+  </div>
+
+  <!-- Loading -->
+  <div class="card" id="loading-section">
+    <div class="spinner-wrap">
+      <div class="spinner-glow"></div>
+      <div class="spinner"></div>
+    </div>
+    <p class="loading-label">Running research agent…</p>
+    <div class="status-log" id="status-log"></div>
+  </div>
+
+  <!-- Result -->
+  <div class="card" id="result-section">
+    <div class="result-header">
+      <span class="result-title">Briefing ready</span>
+      <div class="result-actions">
+        <button class="btn btn-ghost" onclick="resetForm()">New Briefing</button>
+        <button class="btn btn-ghost" onclick="downloadBriefing()">↓ Download .md</button>
+      </div>
+    </div>
+    <div class="md-body" id="md-output"></div>
+  </div>
+
+</div>
+
+<script>
+  let currentTab = 'text';
+  let currentJobId = null;
+  let pollTimer = null;
+  let seenMessages = 0;
+
+  // --- Tab switching ---
+  function switchTab(tab) {
+    currentTab = tab;
+    document.querySelectorAll('.tab').forEach((el, i) => {
+      el.classList.toggle('active', (tab === 'text' && i === 0) || (tab === 'ics' && i === 1));
+    });
+    document.getElementById('panel-text').classList.toggle('active', tab === 'text');
+    document.getElementById('panel-ics').classList.toggle('active', tab === 'ics');
+  }
+
+  // --- File select ---
+  function handleFileSelect(input) {
+    document.getElementById('file-name').textContent = input.files[0]?.name || '';
+  }
+
+  // Drag-and-drop
+  const dropZone = document.getElementById('file-drop');
+  dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('dragover'); });
+  dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+  dropZone.addEventListener('drop', e => {
+    e.preventDefault();
+    dropZone.classList.remove('dragover');
+    const file = e.dataTransfer.files[0];
+    if (file?.name.endsWith('.ics')) {
+      const dt = new DataTransfer();
+      dt.items.add(file);
+      document.getElementById('ics-file').files = dt.files;
+      document.getElementById('file-name').textContent = file.name;
+    }
+  });
+
+  // --- Error helpers ---
+  function showError(msg) {
+    const el = document.getElementById('error-box');
+    el.textContent = msg;
+    el.style.display = 'block';
+  }
+
+  function clearError() {
+    document.getElementById('error-box').style.display = 'none';
+  }
+
+  // Show a section with fade-up animation
+  function showSection(id) {
+    const el = document.getElementById(id);
+    el.style.display = 'block';
+    el.classList.remove('anim');
+    void el.offsetWidth; // reflow to restart animation
+    el.classList.add('anim');
+  }
+
+  function hideSection(id) {
+    document.getElementById(id).style.display = 'none';
+  }
+
+  // --- Submit ---
+  async function startJob() {
+    clearError();
+
+    const fd = new FormData();
+
+    if (currentTab === 'text') {
+      const text = document.getElementById('meeting-text').value.trim();
+      if (!text) { showError('Please paste meeting details first.'); return; }
+      fd.append('input_type', 'text');
+      fd.append('meeting_text', text);
+    } else {
+      const file = document.getElementById('ics-file').files[0];
+      if (!file) { showError('Please select an .ics file first.'); return; }
+      fd.append('input_type', 'ics');
+      fd.append('ics_file', file);
+    }
+
+    hideSection('input-section');
+    hideSection('result-section');
+    showSection('loading-section');
+    document.getElementById('status-log').innerHTML = '';
+    seenMessages = 0;
+
+    try {
+      const res = await fetch('/generate', { method: 'POST', body: fd });
+      const data = await res.json();
+      if (!res.ok || data.error) throw new Error(data.error || 'Server error.');
+      currentJobId = data.job_id;
+      pollTimer = setInterval(poll, 1500);
+    } catch (err) {
+      returnToForm(err.message);
+    }
+  }
+
+  // --- Polling ---
+  async function poll() {
+    try {
+      const res = await fetch(`/status/${currentJobId}`);
+      const data = await res.json();
+
+      const log = document.getElementById('status-log');
+      for (let i = seenMessages; i < data.messages.length; i++) {
+        const line = document.createElement('div');
+        line.className = 'log-line';
+        line.textContent = data.messages[i];
+        log.appendChild(line);
+        log.scrollTop = log.scrollHeight;
+      }
+      seenMessages = data.messages.length;
+
+      if (data.status === 'done') {
+        clearInterval(pollTimer);
+        showResult(data.result);
+      } else if (data.status === 'error') {
+        clearInterval(pollTimer);
+        returnToForm(data.error || 'Something went wrong.');
+      }
+    } catch {
+      clearInterval(pollTimer);
+      returnToForm('Lost connection to server.');
+    }
+  }
+
+  // --- Show result ---
+  function showResult(markdown) {
+    hideSection('loading-section');
+    showSection('result-section');
+    document.getElementById('md-output').innerHTML = marked.parse(markdown);
+  }
+
+  // --- Return to form with error ---
+  function returnToForm(msg) {
+    hideSection('loading-section');
+    showSection('input-section');
+    showError(msg);
+  }
+
+  // --- Download ---
+  function downloadBriefing() {
+    if (currentJobId) window.location.href = `/download/${currentJobId}`;
+  }
+
+  // --- Reset ---
+  function resetForm() {
+    hideSection('result-section');
+    showSection('input-section');
+    document.getElementById('meeting-text').value = '';
+    document.getElementById('ics-file').value = '';
+    document.getElementById('file-name').textContent = '';
+    clearError();
+    currentJobId = null;
+  }
+</script>
+</body>
+</html>
