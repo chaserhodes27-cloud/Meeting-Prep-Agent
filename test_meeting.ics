@@ -1,0 +1,13 @@
+BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//Meeting Prep Agent//Test//EN
+BEGIN:VEVENT
+SUMMARY:Partnership Discussion
+DTSTART:20260422T140000Z
+DTEND:20260422T150000Z
+ORGANIZER;CN=Chase Rhodes:mailto:chaserhodes27@gmail.com
+ATTENDEE;CN=Sam Altman:mailto:sama@openai.com
+ATTENDEE;CN=Satya Nadella:mailto:satyan@microsoft.com
+DESCRIPTION:Quarterly partnership sync to discuss API integrations and go-to-market strategy.
+END:VEVENT
+END:VCALENDAR
