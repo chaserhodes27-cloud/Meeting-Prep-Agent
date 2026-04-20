@@ -9,7 +9,33 @@ An AI agent that automatically researches your meeting attendees and generates a
 - Generates a structured briefing with talking points
 
 ## Demo
-![Meeting Prep Agent Output](output/sample.png)
+
+```markdown
+# Meeting Briefing: Meeting with Robyn Frye
+
+## Meeting Overview
+- **Date/Time:** Today at 12:30pm
+- **Attendees:** Robyn Frye (robyn.frye@workday.com)
+
+## Attendees
+
+### Robyn Frye
+- **Role/Company:** Principal, Frye Consulting; associated with Workday
+- **Background:** Active on LinkedIn sharing Workday content; supported
+  regional growth initiatives from Workday's Singapore office
+
+## Company News
+
+### Workday (workday.com)
+- Aneel Bhusri returned as CEO, focused on AI/technology leadership
+- April 2026: Workday Government Research released findings on federal
+  finance teams and outdated tech risk
+
+## Suggested Talking Points
+- Workday's AI & digital labor strategy — how it affects Robyn's work
+- Regional growth initiatives she's supporting
+- Leadership transition shaping internal priorities
+```
 
 ## Tech Stack
 - Python
