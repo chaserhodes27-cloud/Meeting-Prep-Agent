@@ -68,7 +68,7 @@ SECRET_KEY=any-random-string
 # Optional: Google Calendar
 GOOGLE_CLIENT_ID=your-client-id
 GOOGLE_CLIENT_SECRET=your-secret
-GOOGLE_REDIRECT_URI=http://localhost:5001/oauth2callback
+GOOGLE_REDIRECT_URI=https://meeting-prep-agent-tyuy.onrender.com/oauth2callback
 ```
 
 **4. Start the server**
@@ -76,7 +76,7 @@ GOOGLE_REDIRECT_URI=http://localhost:5001/oauth2callback
 python3 app.py
 ```
 
-Open [http://localhost:5001](http://localhost:5001), create an account, and generate your first briefing.
+Open [https://meeting-prep-agent-tyuy.onrender.com](https://meeting-prep-agent-tyuy.onrender.com), create an account, and generate your first briefing.
 
 ---
 
