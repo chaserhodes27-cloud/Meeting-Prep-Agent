@@ -1,58 +1,91 @@
-# Meeting Prep Agent 🤝
+# Meeting Prep Agent
 
-A multi-user AI SaaS app that researches your meeting attendees and generates a personalized briefing doc before you walk into any meeting. Available as both a **web UI** and a **CLI**.
+**Never walk into a meeting unprepared again.**
 
-## What it does
-- Parses meeting invites (.ics files, pasted text, or Google Calendar)
-- Researches each attendee's background and LinkedIn profile
-- Fetches recent news about their company
-- Generates a structured briefing with talking points tailored to your background and goals
+Meeting Prep Agent researches your attendees, pulls the latest company news, and delivers a personalized briefing doc — in under a minute.
+
+[![Live Demo](https://img.shields.io/badge/Live%20Demo-meeting--prep--agent-7c3aed?style=for-the-badge&logo=render&logoColor=white)](https://meeting-prep-agent-tyuy.onrender.com)
+
+---
 
 ## Features
-- **User accounts** — sign up, log in, log out; each user's data is fully isolated
-- **Briefing history** — every generated briefing is saved and accessible from your account
-- **Personalization** — set your background & goals once; Claude injects them into every briefing
-- **Google Calendar integration** — connect your calendar to pull upcoming meetings directly into the app
-- **Web UI + CLI** — browser-based app for most users, command-line for power users
+
+- **AI-powered attendee research** — Claude searches LinkedIn profiles and company news for every person in the meeting
+- **Personalized talking points** — set your background and goals once; every briefing is written specifically for you
+- **Google Calendar integration** — connect your calendar and prep any upcoming meeting in one click
+- **Multi-user authentication** — secure signup, login, and fully isolated per-user data
+- **Briefing history** — every briefing is saved to your account so you can reference it later
+- **Downloadable docs** — export any briefing as a `.md` file
+- **Dark-themed responsive UI** — clean, fast, works on any screen size
+
+---
 
 ## Demo
 
-The web UI is a dark-themed single-page app where you paste meeting details (or upload a `.ics` file) and click **Generate Briefing**. A live status log shows each research step as it runs — searching LinkedIn, fetching company news, generating with Claude — then the finished briefing renders as formatted markdown on the same page. A download button saves the `.md` file locally.
+Paste a meeting invite (or upload a `.ics` file), click **Generate Briefing**, and watch the agent work in real time. A live status log tracks each step — researching attendees, fetching company news, generating with Claude — then the finished briefing renders as formatted markdown. Connect Google Calendar to pull upcoming meetings directly into the app.
+
+---
 
 ## Tech Stack
-- Python + Flask
-- Flask-Login + Flask-WTF (authentication & forms)
-- SQLAlchemy + SQLite (user accounts & briefing history)
-- Anthropic Claude API (claude-sonnet-4-6)
-- Tavily Search API
-- Google Calendar API (OAuth 2.0)
-- icalendar
 
-## Setup
-1. Clone the repo
-2. Install dependencies: `pip3 install -r requirements.txt`
-3. Copy `.env.example` to `.env` and add your API keys
-4. Run it!
+| Layer | Technology |
+|---|---|
+| Backend | Python, Flask |
+| AI | Anthropic Claude API (`claude-sonnet-4-6`) |
+| Research | Tavily Search API |
+| Auth | Flask-Login, Flask-WTF |
+| Database | SQLAlchemy, PostgreSQL (SQLite for local dev) |
+| Calendar | Google Calendar API (OAuth 2.0) |
+| Hosting | Render |
 
-## Usage
+---
 
-### Web UI (recommended)
+## Running Locally
+
+**1. Clone the repo**
+```bash
+git clone https://github.com/chaserhodes27-cloud/Meeting-Prep-Agent.git
+cd Meeting-Prep-Agent
+```
+
+**2. Install dependencies**
+```bash
+pip3 install -r requirements.txt
+```
+
+**3. Configure environment variables**
+```bash
+cp .env.example .env
+```
+
+Open `.env` and fill in:
+
+```env
+ANTHROPIC_API_KEY=your-key         # anthropic.com
+TAVILY_API_KEY=your-key            # tavily.com
+SECRET_KEY=any-random-string
+
+# Optional: Google Calendar
+GOOGLE_CLIENT_ID=your-client-id
+GOOGLE_CLIENT_SECRET=your-secret
+GOOGLE_REDIRECT_URI=http://localhost:5001/oauth2callback
+```
+
+**4. Start the server**
 ```bash
 python3 app.py
 ```
-Then open [http://localhost:5001](http://localhost:5001) in your browser. Create an account, set your background & goals in your profile, and start generating briefings.
 
-### CLI
-```bash
-# With a .ics calendar file
-python3 main.py --input meeting.ics
+Open [http://localhost:5001](http://localhost:5001), create an account, and generate your first briefing.
 
-# With pasted text
-python3 main.py --text "Meeting with John at john@stripe.com on Friday at 3pm"
-```
+---
 
-## Output
-Briefings are saved to `output/YYYY-MM-DD_meeting-title.md` and stored in your account history.
+## Screenshots
+
+> _Coming soon_
+
+---
 
 ## Built by
-Chase Rhodes — [github.com/chaserhodes27-cloud](https://github.com/chaserhodes27-cloud)
+
+**Chase Rhodes** — [github.com/chaserhodes27-cloud](https://github.com/chaserhodes27-cloud)
