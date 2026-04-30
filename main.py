@@ -13,7 +13,7 @@ TAVILY_API_KEY = os.getenv("TAVILY_API_KEY")
 ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY")
 MY_EMAIL = os.getenv("MY_EMAIL", "").lower()
 
-SYSTEM_PROMPT = """You are a professional meeting preparation assistant. Your job is to produce a structured briefing document in Markdown format based on research data provided to you.
+_PROMPT_BASE = """You are a professional meeting preparation assistant. Your job is to produce a structured briefing document in Markdown format based on research data provided to you.
 
 Follow this exact output structure — do not add or remove sections:
 
@@ -42,15 +42,67 @@ For each company represented by attendees, write:
 ### {Company Name}
 - Bullet point for each notable recent headline or development, with approximate date if available
 
-## Suggested Talking Points
-- 3-5 actionable bullet points tailored to the attendees' backgrounds and the company context
+{TALKING_POINTS_SECTION}
 
 Rules you must follow:
 - Be concise. Use bullet points, not paragraphs, except where noted.
 - If any information is missing or not found, write "Not found" — never fabricate or guess details.
 - Only use information provided in the research data. Do not add information from your own knowledge.
-- Replace {MEETING_TITLE}, {title}, {datetime} with the actual values from the meeting data.
+- Replace {{MEETING_TITLE}}, {{title}}, {{datetime}} with the actual values from the meeting data.
+- If USER CONTEXT is provided, use it to personalize the talking points to that specific person's background and goals.
 """
+
+_TALKING_POINTS = {
+    "job_interview": """\
+## Suggested Talking Points
+- 3-5 bullet points specifically for a job interview setting
+- For each point: lead with how the user's background connects to this company's mission, products, or recent news
+- Include 1-2 smart questions the user should ask the interviewer (based on company news or the interviewer's background)
+- Flag any shared background, alma mater, or career overlap between the user and the attendees
+- If USER CONTEXT is provided, frame every point around why this role is a strong fit for that specific person""",
+
+    "sales_call": """\
+## Suggested Talking Points
+- 3-5 bullet points specifically for a sales or business development call
+- Lead with the prospect's likely pain points based on their role, company size, and recent news
+- Suggest a discovery question tailored to each key attendee's position
+- Note any recent company news (funding, product launches, leadership changes) that creates a relevant opening
+- If USER CONTEXT is provided, connect the user's offering directly to what this prospect cares about""",
+
+    "networking": """\
+## Suggested Talking Points
+- 3-5 bullet points specifically for a networking conversation
+- Focus on genuine connection: shared interests, career overlap, or mutual industry themes
+- Suggest one concrete way the user could offer value to this person (intro, resource, insight)
+- Include a natural follow-up hook — something to reference in a follow-up message after the meeting
+- If USER CONTEXT is provided, highlight what makes this connection especially relevant to the user's current goals""",
+
+    "discovery_call": """\
+## Suggested Talking Points
+- 3-5 bullet points specifically for a discovery or introductory business call
+- Focus on qualification: what to learn about their situation, timeline, and decision-making process
+- Suggest open-ended questions to uncover their needs without pitching too early
+- Note any signals from company news or the attendee's background that hint at priorities or urgency
+- If USER CONTEXT is provided, frame questions around the user's specific offering or area of expertise""",
+
+    "one_on_one": """\
+## Suggested Talking Points
+- 3-5 bullet points for a 1:1 or check-in meeting
+- Focus on relationship-building and collaborative problem-solving
+- Suggest topics based on the attendee's recent activity or role
+- Include one question that shows genuine interest in their work or perspective
+- If USER CONTEXT is provided, highlight areas where the user and attendee can create mutual value""",
+
+    "general": """\
+## Suggested Talking Points
+- 3-5 actionable bullet points tailored to the attendees' backgrounds and the company context
+- If USER CONTEXT is provided, frame every talking point around the user's background, role, and goals — make them directly useful to that specific person entering the meeting""",
+}
+
+
+def get_system_prompt(meeting_type: str = "general") -> str:
+    section = _TALKING_POINTS.get(meeting_type, _TALKING_POINTS["general"])
+    return _PROMPT_BASE.replace("{TALKING_POINTS_SECTION}", section)
 
 
 def parse_ics(filepath: str) -> dict:
@@ -95,6 +147,37 @@ def parse_ics(filepath: str) -> dict:
 
     meeting["attendees"] = _dedupe_attendees(meeting["attendees"])
     return meeting
+
+
+def parse_calendar_event(event_data: dict) -> dict:
+    """Convert a structured Google Calendar event dict into the meeting dict format."""
+    start = event_data.get("datetime", "")
+    dt_obj = None
+    dt_str = "Unknown"
+
+    if start:
+        try:
+            if "T" in start:
+                dt_obj = datetime.fromisoformat(start.replace("Z", "+00:00")).replace(tzinfo=None)
+                dt_str = dt_obj.strftime("%A, %B %d, %Y at %I:%M %p")
+            else:
+                dt_obj = datetime.strptime(start[:10], "%Y-%m-%d")
+                dt_str = dt_obj.strftime("%A, %B %d, %Y")
+        except Exception:
+            dt_str = start
+
+    attendees = [
+        {"name": a.get("name", ""), "email": a.get("email", "").lower()}
+        for a in event_data.get("attendees", [])
+        if a.get("email")
+    ]
+
+    return {
+        "title": event_data.get("title", "Untitled Meeting"),
+        "datetime": dt_str,
+        "_dt_obj": dt_obj,
+        "attendees": _dedupe_attendees(attendees),
+    }
 
 
 def parse_text(raw_text: str, client) -> dict:
@@ -207,7 +290,7 @@ def research_company_news(domain: str, tavily_client) -> str:
         return "No recent news found."
 
 
-def build_user_prompt(meeting: dict, research: dict) -> str:
+def build_user_prompt(meeting: dict, research: dict, user_context: str = "", meeting_type: str = "general") -> str:
     attendee_lines = "\n".join(
         f"- {a['name']} ({a['email']})" if a["name"] else f"- {a['email']}"
         for a in meeting["attendees"]
@@ -228,8 +311,24 @@ def build_user_prompt(meeting: dict, research: dict) -> str:
 
     research_text = "\n\n".join(research_blocks)
 
+    context_section = (
+        f"\nUSER CONTEXT (personalize the briefing to this person's background and goals):\n{user_context}\n"
+        if user_context else ""
+    )
+
+    meeting_type_label = {
+        "job_interview": "Job Interview",
+        "sales_call": "Sales Call",
+        "networking": "Networking",
+        "discovery_call": "Discovery Call",
+        "one_on_one": "1:1 / Check-in",
+        "general": "General Meeting",
+    }.get(meeting_type, "General Meeting")
+
     return f"""Here is the meeting and research data. Generate the briefing now.
 
+MEETING TYPE: {meeting_type_label}
+{context_section}
 MEETING:
 Title: {meeting['title']}
 Date/Time: {meeting['datetime']}
@@ -240,8 +339,9 @@ RESEARCH:
 {research_text}"""
 
 
-def generate_briefing(meeting: dict, research: dict, client) -> str:
-    user_prompt = build_user_prompt(meeting, research)
+def generate_briefing(meeting: dict, research: dict, client, user_context: str = "", meeting_type: str = "general") -> str:
+    user_prompt = build_user_prompt(meeting, research, user_context, meeting_type)
+    system_prompt = get_system_prompt(meeting_type)
 
     response = client.messages.create(
         model="claude-sonnet-4-6",
@@ -249,7 +349,7 @@ def generate_briefing(meeting: dict, research: dict, client) -> str:
         system=[
             {
                 "type": "text",
-                "text": SYSTEM_PROMPT,
+                "text": system_prompt,
                 "cache_control": {"type": "ephemeral"},
             }
         ],

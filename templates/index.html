@@ -4,11 +4,18 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Meeting Prep Agent</title>
+
+  <link href="https://api.fontshare.com/v2/css?f[]=general-sans@400,500,600,700&display=swap" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/@fontsource/geist-sans/index.css" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     :root {
+      --background: hsl(260, 87%, 3%);
+      --foreground: hsl(40, 6%, 95%);
+      --hero-sub: hsl(40, 6%, 82%);
       --purple: #7c3aed;
       --blue: #2563eb;
       --grad: linear-gradient(135deg, #7c3aed 0%, #2563eb 100%);
@@ -22,21 +29,519 @@
     }
 
     body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      background: #0f0f0f;
-      color: var(--text-primary);
+      font-family: 'Geist Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: var(--background);
+      color: var(--foreground);
       min-height: 100vh;
-      padding: 2.5rem 1rem 5rem;
       overflow-x: hidden;
     }
 
-    /* Ambient background glows */
+    /* ===== LIQUID GLASS ===== */
+    .liquid-glass {
+      background: rgba(255, 255, 255, 0.01);
+      background-blend-mode: luminosity;
+      backdrop-filter: blur(4px);
+      border: none;
+      box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.1);
+      position: relative;
+      overflow: hidden;
+    }
+    .liquid-glass::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      border-radius: inherit;
+      padding: 1.4px;
+      background: linear-gradient(180deg, rgba(255,255,255,0.45) 0%, rgba(255,255,255,0.15) 20%, rgba(255,255,255,0) 40%, rgba(255,255,255,0) 60%, rgba(255,255,255,0.15) 80%, rgba(255,255,255,0.45) 100%);
+      -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+      -webkit-mask-composite: xor;
+      mask-composite: exclude;
+      pointer-events: none;
+    }
+
+    /* ===== HERO SECONDARY BUTTON ===== */
+    .btn-hero-secondary {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.4rem;
+      background: rgba(255, 255, 255, 0.07);
+      border: 1px solid rgba(255, 255, 255, 0.13);
+      color: var(--foreground);
+      font-family: 'Geist Sans', sans-serif;
+      font-size: 0.875rem;
+      font-weight: 500;
+      border-radius: 9999px;
+      cursor: pointer;
+      transition: background 0.2s, border-color 0.2s;
+      white-space: nowrap;
+    }
+    .btn-hero-secondary:hover {
+      background: rgba(255, 255, 255, 0.12);
+      border-color: rgba(255, 255, 255, 0.22);
+    }
+
+    /* ===== HERO WRAPPER ===== */
+    #hero-wrapper {
+      position: relative;
+      min-height: 100vh;
+    }
+
+    #hero-video {
+      position: fixed;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      opacity: 0;
+      z-index: -1;
+    }
+
+    /* ===== HERO LAYER ===== */
+    #hero-layer {
+      position: relative;
+      z-index: 10;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow: visible;
+    }
+
+    .hero-blur-overlay {
+      position: absolute;
+      width: 984px;
+      height: 527px;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: rgb(3, 7, 18);
+      filter: blur(82px);
+      opacity: 0.9;
+      pointer-events: none;
+    }
+
+    /* ===== NAVBAR ===== */
+    #hero-nav {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 1.25rem 2rem;
+      width: 100%;
+      position: relative;
+      z-index: 20;
+    }
+
+    .nav-logo {
+      height: 32px;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      text-decoration: none;
+    }
+
+    .nav-logo-mark {
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      background: linear-gradient(135deg, #6366f1, #a855f7);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'General Sans', sans-serif;
+      font-weight: 700;
+      font-size: 0.875rem;
+      color: white;
+      flex-shrink: 0;
+    }
+
+    .nav-logo-text {
+      font-family: 'General Sans', sans-serif;
+      font-weight: 600;
+      font-size: 0.9rem;
+      color: var(--foreground);
+      opacity: 0.9;
+    }
+
+    .nav-items {
+      display: flex;
+      align-items: center;
+      gap: 0.125rem;
+    }
+
+    .nav-item {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.25rem;
+      padding: 0.4rem 0.75rem;
+      background: transparent;
+      border: none;
+      color: rgba(245, 243, 240, 0.9);
+      font-family: 'Geist Sans', sans-serif;
+      font-size: 0.875rem;
+      font-weight: 400;
+      cursor: pointer;
+      transition: color 0.2s;
+      border-radius: 6px;
+    }
+    .nav-item:hover { color: var(--foreground); }
+
+    .nav-chevron {
+      width: 14px;
+      height: 14px;
+      opacity: 0.55;
+      flex-shrink: 0;
+    }
+
+    .nav-divider {
+      height: 1px;
+      width: 100%;
+      background: linear-gradient(to right, transparent, rgba(245, 243, 240, 0.2), transparent);
+      margin-top: 3px;
+      position: relative;
+      z-index: 20;
+    }
+
+    /* ===== HERO MAIN ===== */
+    #hero-main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 2rem;
+      position: relative;
+      z-index: 20;
+    }
+
+    .hero-headline {
+      font-family: 'General Sans', sans-serif;
+      font-size: 220px;
+      font-weight: 400;
+      line-height: 1.02;
+      letter-spacing: -0.024em;
+      color: var(--foreground);
+    }
+
+    .hero-headline-gradient {
+      background-clip: text;
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-image: linear-gradient(to left, #6366f1, #a855f7, #fcd34d);
+    }
+
+    .hero-subtitle {
+      color: var(--hero-sub);
+      font-size: 1.125rem;
+      line-height: 2rem;
+      max-width: 28rem;
+      margin-top: 9px;
+      opacity: 0.8;
+    }
+
+    .hero-cta {
+      margin-top: 25px;
+      padding: 24px 29px;
+    }
+
+    /* ===== LOGO MARQUEE ===== */
+    #hero-marquee {
+      padding-bottom: 2.5rem;
+      position: relative;
+      z-index: 20;
+      width: 100%;
+    }
+
+    .marquee-inner {
+      max-width: 64rem;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      gap: 3rem;
+      padding: 0 2rem;
+    }
+
+    .marquee-label {
+      color: rgba(245, 243, 240, 0.5);
+      font-size: 0.875rem;
+      line-height: 1.6;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+
+    .marquee-track-wrapper {
+      flex: 1;
+      overflow: hidden;
+    }
+
+    @keyframes marquee-scroll {
+      from { transform: translateX(0%); }
+      to   { transform: translateX(-50%); }
+    }
+
+    .marquee-track {
+      display: flex;
+      align-items: center;
+      gap: 4rem;
+      animation: marquee-scroll 20s linear infinite;
+      width: max-content;
+    }
+
+    .marquee-logo-item {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      flex-shrink: 0;
+    }
+
+    .marquee-logo-icon {
+      width: 24px;
+      height: 24px;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.6rem;
+      font-weight: 700;
+      color: rgba(255, 255, 255, 0.75);
+    }
+
+    .marquee-logo-name {
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--foreground);
+      white-space: nowrap;
+    }
+
+    /* ===== RESPONSIVE HERO ===== */
+    @media (max-width: 900px) {
+      .hero-headline { font-size: 120px; }
+      .nav-items { display: none; }
+    }
+    @media (max-width: 600px) {
+      .hero-headline { font-size: 72px; }
+      #hero-nav { padding: 1rem 1.25rem; }
+      .hero-cta { padding: 16px 22px; }
+    }
+
+    /* ===== CONTENT SECTIONS ===== */
+    .content-section {
+      position: relative;
+      z-index: 1;
+      padding: 5rem 1.5rem;
+    }
+
+    .section-blur {
+      position: absolute;
+      inset: 0;
+      width: 900px;
+      max-width: 100%;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgb(3, 7, 18);
+      filter: blur(72px);
+      opacity: 0.78;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .section-inner {
+      max-width: 860px;
+      margin: 0 auto;
+      position: relative;
+      z-index: 1;
+    }
+
+    .section-eyebrow {
+      font-family: 'Geist Sans', sans-serif;
+      font-size: 0.68rem;
+      font-weight: 600;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: #a855f7;
+      margin-bottom: 0.6rem;
+    }
+
+    .section-title {
+      font-family: 'General Sans', sans-serif;
+      font-size: 2.25rem;
+      font-weight: 400;
+      letter-spacing: -0.022em;
+      color: var(--foreground);
+      margin-bottom: 2.5rem;
+      line-height: 1.1;
+    }
+
+    .section-divider {
+      height: 1px;
+      background: linear-gradient(to right, transparent, rgba(245, 243, 240, 0.1), transparent);
+      margin: 0 1.5rem;
+    }
+
+    /* Steps */
+    .steps-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1.25rem;
+    }
+
+    .step-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 1.75rem;
+      backdrop-filter: blur(24px);
+      -webkit-backdrop-filter: blur(24px);
+      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+    }
+
+    .step-number {
+      display: block;
+      font-family: 'General Sans', sans-serif;
+      font-size: 2.75rem;
+      font-weight: 400;
+      letter-spacing: -0.04em;
+      background: linear-gradient(to left, #6366f1, #a855f7, #fcd34d);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: 1rem;
+      line-height: 1;
+    }
+
+    .step-card h3 {
+      font-family: 'General Sans', sans-serif;
+      font-size: 1.05rem;
+      font-weight: 500;
+      color: var(--foreground);
+      margin-bottom: 0.5rem;
+      letter-spacing: -0.01em;
+    }
+
+    .step-card p {
+      font-family: 'Geist Sans', sans-serif;
+      font-size: 0.875rem;
+      color: var(--hero-sub);
+      line-height: 1.65;
+      opacity: 0.8;
+    }
+
+    /* Features */
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1rem;
+    }
+
+    .feature-card {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 1.4rem;
+      backdrop-filter: blur(24px);
+      -webkit-backdrop-filter: blur(24px);
+      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+    }
+
+    .feature-emoji {
+      font-size: 1.3rem;
+      line-height: 1;
+    }
+
+    .feature-card h3 {
+      font-family: 'General Sans', sans-serif;
+      font-size: 0.95rem;
+      font-weight: 500;
+      color: var(--foreground);
+      margin-bottom: 0.2rem;
+      letter-spacing: -0.01em;
+    }
+
+    .feature-card p {
+      font-family: 'Geist Sans', sans-serif;
+      font-size: 0.8rem;
+      color: var(--hero-sub);
+      opacity: 0.75;
+      line-height: 1.55;
+    }
+
+    /* Use Cases */
+    .use-cases-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 1rem;
+    }
+
+    .use-case-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 1.4rem 1.6rem;
+      backdrop-filter: blur(24px);
+      -webkit-backdrop-filter: blur(24px);
+      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+    }
+
+    .use-case-card:last-child:nth-child(odd) {
+      grid-column: span 2;
+    }
+
+    .use-case-card h3 {
+      font-family: 'General Sans', sans-serif;
+      font-size: 1rem;
+      font-weight: 500;
+      color: var(--foreground);
+      margin-bottom: 0.35rem;
+      letter-spacing: -0.01em;
+    }
+
+    .use-case-card p {
+      font-family: 'Geist Sans', sans-serif;
+      font-size: 0.82rem;
+      color: var(--hero-sub);
+      opacity: 0.75;
+      line-height: 1.6;
+    }
+
+    @media (max-width: 768px) {
+      .steps-grid, .features-grid { grid-template-columns: 1fr; }
+      .use-cases-grid { grid-template-columns: 1fr; }
+      .use-case-card:last-child:nth-child(odd) { grid-column: span 1; }
+      .section-title { font-size: 1.75rem; }
+      .content-section { padding: 3.5rem 1rem; }
+    }
+
+    /* ===== APP SECTION (BELOW HERO) ===== */
+    #app-section {
+      position: relative;
+      z-index: 1;
+      padding: 2.5rem 1rem 5rem;
+    }
+
+    .app-blur-overlay {
+      position: absolute;
+      inset: 0;
+      width: 760px;
+      max-width: 100%;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgb(3, 7, 18);
+      filter: blur(72px);
+      opacity: 0.82;
+      pointer-events: none;
+      z-index: 0;
+    }
+
     .bg-orb {
       position: fixed;
       border-radius: 50%;
       pointer-events: none;
       z-index: 0;
       filter: blur(90px);
+      display: none;
     }
     .bg-orb-1 {
       width: 560px; height: 560px;
@@ -52,15 +557,14 @@
     }
 
     @keyframes orbDrift1 {
-      0%,  100% { transform: translate(0, 0)   scale(1);    opacity: 0.9; }
-      33%        { transform: translate(60px, 40px) scale(1.1); opacity: 1;   }
+      0%,  100% { transform: translate(0, 0) scale(1); opacity: 0.9; }
+      33%        { transform: translate(60px, 40px) scale(1.1); opacity: 1; }
       66%        { transform: translate(-30px, 70px) scale(0.95); opacity: 0.75; }
     }
-
     @keyframes orbDrift2 {
-      0%,  100% { transform: translate(0, 0)    scale(1);    opacity: 0.8; }
-      40%        { transform: translate(-50px, -40px) scale(1.12); opacity: 1;   }
-      70%        { transform: translate(30px, -60px)  scale(0.9);  opacity: 0.65; }
+      0%,  100% { transform: translate(0, 0) scale(1); opacity: 0.8; }
+      40%        { transform: translate(-50px, -40px) scale(1.12); opacity: 1; }
+      70%        { transform: translate(30px, -60px) scale(0.9); opacity: 0.65; }
     }
 
     .container {
@@ -70,7 +574,6 @@
       z-index: 1;
     }
 
-    /* Header */
     header {
       text-align: center;
       margin-bottom: 2.25rem;
@@ -81,7 +584,8 @@
       display: inline-flex;
       align-items: center;
       gap: 0.4rem;
-      font-size: 0.7rem;
+      font-family: 'Geist Sans', sans-serif;
+      font-size: 0.68rem;
       font-weight: 600;
       letter-spacing: 0.1em;
       text-transform: uppercase;
@@ -89,7 +593,7 @@
       border: 1px solid var(--border);
       border-radius: 99px;
       padding: 0.3rem 0.85rem;
-      margin-bottom: 1rem;
+      margin-bottom: 1.25rem;
       background: var(--surface);
       position: relative;
       animation: badgePulse 3s ease-in-out infinite;
@@ -99,27 +603,28 @@
       0%,  100% { box-shadow: 0 0 0px 0px rgba(167, 139, 250, 0);   border-color: rgba(255,255,255,0.07); }
       50%        { box-shadow: 0 0 10px 3px rgba(167, 139, 250, 0.18); border-color: rgba(167, 139, 250, 0.35); }
     }
-
     .header-badge span { color: #a78bfa; }
 
     header h1 {
-      font-size: 2rem;
-      font-weight: 700;
-      letter-spacing: -0.03em;
-      background: var(--grad-text);
+      font-family: 'General Sans', sans-serif;
+      font-size: 4rem;
+      font-weight: 400;
+      letter-spacing: -0.024em;
+      line-height: 1.05;
+      background: linear-gradient(to left, #6366f1, #a855f7, #fcd34d);
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
       background-clip: text;
-      line-height: 1.2;
     }
-
     header p {
-      color: var(--text-muted);
-      margin-top: 0.6rem;
-      font-size: 0.9rem;
+      font-family: 'Geist Sans', sans-serif;
+      color: var(--hero-sub);
+      margin-top: 0.75rem;
+      font-size: 1rem;
+      line-height: 1.75;
+      opacity: 0.8;
     }
 
-    /* Glass card */
     .card {
       background: var(--surface);
       border: 1px solid var(--border);
@@ -128,12 +633,9 @@
       margin-bottom: 1.25rem;
       backdrop-filter: blur(24px);
       -webkit-backdrop-filter: blur(24px);
-      box-shadow:
-        0 0 0 1px rgba(255,255,255,0.02) inset,
-        0 20px 60px rgba(0, 0, 0, 0.4);
+      box-shadow: 0 0 0 1px rgba(255,255,255,0.02) inset, 0 20px 60px rgba(0, 0, 0, 0.4);
     }
 
-    /* Tabs */
     .tabs {
       display: flex;
       background: rgba(0, 0, 0, 0.3);
@@ -143,27 +645,21 @@
       gap: 4px;
       border: 1px solid var(--border);
     }
-
     .tab {
       flex: 1;
       padding: 0.5rem;
       border: none;
       border-radius: 7px;
       background: transparent;
+      font-family: 'Geist Sans', sans-serif;
       font-size: 0.85rem;
       font-weight: 500;
       color: var(--text-muted);
       cursor: pointer;
       transition: all .2s ease;
     }
+    .tab.active { background: var(--grad); color: #fff; box-shadow: 0 2px 12px rgba(124, 58, 237, 0.35); }
 
-    .tab.active {
-      background: var(--grad);
-      color: #fff;
-      box-shadow: 0 2px 12px rgba(124, 58, 237, 0.35);
-    }
-
-    /* Panels */
     .panel { display: none; }
     .panel.active { display: block; }
 
@@ -182,15 +678,12 @@
       outline: none;
       transition: border-color .2s, box-shadow .2s;
     }
-
     textarea:focus {
       border-color: var(--border-focus);
       box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.15), 0 0 20px rgba(124, 58, 237, 0.08);
     }
-
     textarea::placeholder { color: var(--text-muted); }
 
-    /* File drop */
     .file-drop {
       border: 1.5px dashed rgba(255, 255, 255, 0.12);
       border-radius: 10px;
@@ -201,25 +694,14 @@
       transition: all .2s ease;
       background: rgba(0, 0, 0, 0.2);
     }
-
     .file-drop:hover, .file-drop.dragover {
       border-color: rgba(167, 139, 250, 0.5);
       background: rgba(124, 58, 237, 0.06);
       box-shadow: 0 0 20px rgba(124, 58, 237, 0.08) inset;
     }
-
-    .file-drop input[type="file"] {
-      position: absolute;
-      inset: 0;
-      width: 100%;
-      height: 100%;
-      opacity: 0;
-      cursor: pointer;
-    }
-
+    .file-drop input[type="file"] { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; }
     .drop-icon { font-size: 1.75rem; margin-bottom: 0.6rem; }
     .drop-hint { color: var(--text-muted); font-size: 0.875rem; }
-
     .file-selected {
       margin-top: 0.6rem;
       font-size: 0.85rem;
@@ -230,7 +712,198 @@
       background-clip: text;
     }
 
-    /* Error box */
+    .context-label {
+      display: block;
+      font-family: 'Geist Sans', sans-serif;
+      font-size: 0.8rem;
+      font-weight: 500;
+      color: var(--text-soft);
+      margin-bottom: 0.5rem;
+    }
+    .context-label .optional {
+      font-weight: 400;
+      color: var(--text-muted);
+      margin-left: 0.3rem;
+    }
+    .context-field {
+      margin-top: 1rem;
+    }
+    .context-field textarea {
+      height: 72px;
+      resize: none;
+    }
+
+    /* ===== UPCOMING MEETINGS ===== */
+    .upcoming-section {
+      margin-bottom: 1.5rem;
+    }
+
+    .upcoming-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 0.75rem;
+    }
+
+    .upcoming-title {
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--text-soft);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .upcoming-connect {
+      font-size: 0.75rem;
+      color: #a78bfa;
+      text-decoration: none;
+      display: flex;
+      align-items: center;
+      gap: 0.3rem;
+      opacity: 0.8;
+      transition: opacity 0.2s;
+    }
+
+    .upcoming-connect:hover { opacity: 1; }
+
+    .upcoming-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0.4rem;
+    }
+
+    .upcoming-item {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.65rem 0.875rem;
+      background: rgba(167, 139, 250, 0.04);
+      border: 1px solid rgba(167, 139, 250, 0.15);
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background 0.15s, border-color 0.15s;
+      text-align: left;
+      width: 100%;
+    }
+
+    .upcoming-item:hover {
+      background: rgba(167, 139, 250, 0.1);
+      border-color: rgba(167, 139, 250, 0.35);
+    }
+
+    .upcoming-item.selected {
+      background: rgba(167, 139, 250, 0.12);
+      border-color: rgba(167, 139, 250, 0.5);
+    }
+
+    .upcoming-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: #a78bfa;
+      flex-shrink: 0;
+    }
+
+    .upcoming-info { flex: 1; min-width: 0; }
+
+    .upcoming-name {
+      font-size: 0.825rem;
+      font-weight: 500;
+      color: var(--text-primary);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .upcoming-meta {
+      font-size: 0.72rem;
+      color: var(--text-muted);
+      margin-top: 0.1rem;
+    }
+
+    .upcoming-arrow {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      flex-shrink: 0;
+    }
+
+    .upcoming-empty {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      padding: 0.75rem 0;
+    }
+
+    .upcoming-divider {
+      border: none;
+      border-top: 1px solid var(--border);
+      margin: 1.25rem 0;
+    }
+
+    .selected-meeting-banner {
+      display: none;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.6rem 0.875rem;
+      background: rgba(167, 139, 250, 0.08);
+      border: 1px solid rgba(167, 139, 250, 0.25);
+      border-radius: 8px;
+      margin-bottom: 0.75rem;
+      font-size: 0.8rem;
+      color: #a78bfa;
+    }
+
+    .selected-meeting-banner.visible { display: flex; }
+
+    .banner-clear {
+      margin-left: auto;
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      cursor: pointer;
+      font-size: 0.9rem;
+      padding: 0;
+      line-height: 1;
+    }
+
+    .banner-clear:hover { color: var(--foreground); }
+
+    .meeting-type-row {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      margin-top: 1rem;
+    }
+
+    .meeting-type-label {
+      font-size: 0.8rem;
+      font-weight: 500;
+      color: var(--text-soft);
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+
+    .meeting-type-select {
+      flex: 1;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 0.5rem 0.75rem;
+      color: var(--text-primary);
+      font-family: inherit;
+      font-size: 0.8rem;
+      outline: none;
+      cursor: pointer;
+      transition: border-color 0.2s;
+      appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='rgba(255,255,255,0.4)' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 0.75rem center;
+      padding-right: 2rem;
+    }
+
+    .meeting-type-select:focus { border-color: var(--border-focus); }
+    .meeting-type-select option { background: hsl(260, 87%, 8%); }
+
     .error-box {
       display: none;
       background: rgba(220, 38, 38, 0.08);
@@ -242,7 +915,6 @@
       margin-top: 0.875rem;
     }
 
-    /* Primary button */
     .btn {
       display: inline-flex;
       align-items: center;
@@ -250,13 +922,13 @@
       gap: 0.4rem;
       padding: 0.7rem 1.4rem;
       border-radius: 10px;
+      font-family: 'Geist Sans', sans-serif;
       font-size: 0.9rem;
       font-weight: 600;
       border: none;
       cursor: pointer;
       transition: all .2s ease;
     }
-
     .btn-primary {
       width: 100%;
       margin-top: 1.1rem;
@@ -267,8 +939,6 @@
       letter-spacing: 0.01em;
       box-shadow: 0 4px 20px rgba(124, 58, 237, 0.25);
     }
-
-    /* Shimmer sweep on hover */
     .btn-primary::after {
       content: '';
       position: absolute;
@@ -278,24 +948,10 @@
       transition: left .45s ease;
       pointer-events: none;
     }
-
-    .btn-primary:hover:not(:disabled) {
-      box-shadow: 0 6px 30px rgba(124, 58, 237, 0.45);
-      transform: translateY(-1px);
-    }
-
+    .btn-primary:hover:not(:disabled) { box-shadow: 0 6px 30px rgba(124, 58, 237, 0.45); transform: translateY(-1px); }
     .btn-primary:hover:not(:disabled)::after { left: 150%; }
-
-    .btn-primary:active:not(:disabled) {
-      transform: translateY(0);
-      box-shadow: 0 2px 12px rgba(124, 58, 237, 0.3);
-    }
-
-    .btn-primary:disabled {
-      opacity: 0.4;
-      cursor: not-allowed;
-      box-shadow: none;
-    }
+    .btn-primary:active:not(:disabled) { transform: translateY(0); box-shadow: 0 2px 12px rgba(124, 58, 237, 0.3); }
+    .btn-primary:disabled { opacity: 0.4; cursor: not-allowed; box-shadow: none; }
 
     .btn-ghost {
       background: rgba(255, 255, 255, 0.05);
@@ -303,54 +959,31 @@
       border: 1px solid var(--border);
       font-size: 0.82rem;
     }
+    .btn-ghost:hover { background: rgba(255, 255, 255, 0.09); color: var(--text-primary); }
 
-    .btn-ghost:hover {
-      background: rgba(255, 255, 255, 0.09);
-      color: var(--text-primary);
-    }
-
-    /* Loading */
     #loading-section { display: none; text-align: center; }
 
-    .spinner-wrap {
-      position: relative;
-      width: 48px;
-      height: 48px;
-      margin: 0 auto 1.25rem;
-    }
-
+    .spinner-wrap { position: relative; width: 48px; height: 48px; margin: 0 auto 1.25rem; }
     .spinner {
-      width: 48px;
-      height: 48px;
+      width: 48px; height: 48px;
       border-radius: 50%;
       border: 2.5px solid rgba(255,255,255,0.06);
       border-top-color: #a78bfa;
       border-right-color: #60a5fa;
       animation: spin .8s linear infinite;
     }
-
     .spinner-glow {
-      position: absolute;
-      inset: -6px;
-      border-radius: 50%;
+      position: absolute; inset: -6px; border-radius: 50%;
       background: radial-gradient(circle, rgba(124,58,237,0.2) 0%, transparent 70%);
       animation: pulse 1.8s ease-in-out infinite;
     }
-
     @keyframes spin { to { transform: rotate(360deg); } }
-
     @keyframes pulse {
       0%, 100% { opacity: 0.4; transform: scale(1); }
       50% { opacity: 1; transform: scale(1.1); }
     }
 
-    .loading-label {
-      font-weight: 600;
-      font-size: 0.9rem;
-      color: var(--text-soft);
-      margin-bottom: 1.1rem;
-      letter-spacing: 0.01em;
-    }
+    .loading-label { font-family: 'Geist Sans', sans-serif; font-weight: 500; font-size: 0.9rem; color: var(--hero-sub); margin-bottom: 1.1rem; letter-spacing: 0.01em; }
 
     .status-log {
       text-align: left;
@@ -365,17 +998,13 @@
       max-height: 200px;
       overflow-y: auto;
     }
-
     .status-log::-webkit-scrollbar { width: 4px; }
     .status-log::-webkit-scrollbar-track { background: transparent; }
     .status-log::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 4px; }
-
     .log-line { animation: fadeUp .2s ease both; }
     .log-line::before { content: '→ '; color: #a78bfa; }
 
-    /* Result */
     #result-section { display: none; }
-
     .result-header {
       display: flex;
       align-items: center;
@@ -386,76 +1015,32 @@
       padding-bottom: 1rem;
       border-bottom: 1px solid var(--border);
     }
-
-    .result-title {
-      font-size: 0.78rem;
-      font-weight: 600;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-      color: var(--text-muted);
-    }
-
+    .result-title { font-family: 'Geist Sans', sans-serif; font-size: 0.68rem; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-muted); }
     .result-actions { display: flex; gap: 0.5rem; flex-wrap: wrap; }
 
-    /* Markdown output */
     .md-body { font-size: 0.9rem; line-height: 1.78; color: rgba(255,255,255,0.82); }
-
     .md-body h1 {
-      font-size: 1.3rem;
-      font-weight: 700;
-      letter-spacing: -0.02em;
-      padding-bottom: 0.75rem;
-      margin-bottom: 1.1rem;
-      background: var(--grad-text);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
+      font-size: 1.3rem; font-weight: 700; letter-spacing: -0.02em;
+      padding-bottom: 0.75rem; margin-bottom: 1.1rem;
+      background: var(--grad-text); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
       border-bottom: 1px solid var(--border);
     }
-
-    .md-body h2 {
-      font-size: 0.68rem;
-      font-weight: 700;
-      letter-spacing: 0.1em;
-      text-transform: uppercase;
-      color: #a78bfa;
-      margin-top: 1.75rem;
-      margin-bottom: 0.6rem;
-    }
-
-    .md-body h3 {
-      font-size: 0.93rem;
-      font-weight: 600;
-      color: var(--text-primary);
-      margin-top: 1rem;
-      margin-bottom: 0.35rem;
-    }
-
+    .md-body h2 { font-size: 0.68rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: #a78bfa; margin-top: 1.75rem; margin-bottom: 0.6rem; }
+    .md-body h3 { font-size: 0.93rem; font-weight: 600; color: var(--text-primary); margin-top: 1rem; margin-bottom: 0.35rem; }
     .md-body ul { padding-left: 1.25rem; margin-bottom: 0.4rem; }
-
     .md-body li { margin-bottom: 0.3rem; }
-
     .md-body strong { color: #fff; font-weight: 600; }
-
-    .md-body hr {
-      border: none;
-      border-top: 1px solid var(--border);
-      margin: 1.25rem 0;
-    }
-
+    .md-body hr { border: none; border-top: 1px solid var(--border); margin: 1.25rem 0; }
     .md-body p { margin-bottom: 0.4rem; }
 
-    /* Fade-up animation — applied when sections come into view */
     @keyframes fadeUp {
       from { opacity: 0; transform: translateY(10px); }
       to   { opacity: 1; transform: translateY(0); }
     }
-
     .anim { animation: fadeUp .35s ease both; }
 
-    /* Mobile */
     @media (max-width: 600px) {
-      body { padding: 1.5rem 0.75rem 4rem; }
+      #app-section { padding: 1.5rem 0.75rem 4rem; }
       .card { padding: 1.25rem; border-radius: 14px; }
       header h1 { font-size: 1.6rem; }
     }
@@ -463,77 +1048,457 @@
 </head>
 <body>
 
-<!-- Ambient glows -->
-<div class="bg-orb bg-orb-1"></div>
-<div class="bg-orb bg-orb-2"></div>
+<!-- Fixed background video — covers entire page -->
+<video id="hero-video"
+  src="https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260328_065045_c44942da-53c6-4804-b734-f9e07fc22e08.mp4"
+  muted playsinline preload="auto"></video>
 
-<div class="container">
+<!-- ===== HERO ===== -->
+<div id="hero-wrapper">
+  <div id="hero-layer">
+    <div class="hero-blur-overlay"></div>
 
-  <header>
-    <div class="header-badge"><span>✦</span> AI-Powered</div>
-    <h1>Meeting Prep Agent</h1>
-    <p>Research your attendees and generate a structured briefing in seconds</p>
-  </header>
+    <!-- Navbar -->
+    <nav id="hero-nav">
+      <div class="nav-logo">
+        <div class="nav-logo-mark">M</div>
+        <span class="nav-logo-text">MeetPrep</span>
+      </div>
 
-  <!-- Input -->
-  <div class="card" id="input-section">
-    <div class="tabs">
-      <button class="tab active" onclick="switchTab('text')">Paste Text</button>
-      <button class="tab" onclick="switchTab('ics')">Upload .ics File</button>
+      <div class="nav-items">
+        <button class="nav-item" onclick="document.getElementById('how-it-works').scrollIntoView({behavior:'smooth'})">
+          How It Works
+          <svg class="nav-chevron" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+        </button>
+        <button class="nav-item" onclick="document.getElementById('features').scrollIntoView({behavior:'smooth'})">Features</button>
+        <button class="nav-item" onclick="document.getElementById('use-cases').scrollIntoView({behavior:'smooth'})">
+          Use Cases
+          <svg class="nav-chevron" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+        </button>
+      </div>
+
+      <div class="nav-items" style="gap:0.75rem;">
+        <span style="font-size:0.8rem;color:rgba(255,255,255,0.45);">{{ user.username }}</span>
+        <a href="{{ url_for('history') }}" class="nav-item" style="text-decoration:none;">My Briefings</a>
+        <a href="{{ url_for('profile') }}" class="nav-item" style="text-decoration:none;">Profile</a>
+        <a href="{{ url_for('logout') }}" class="nav-item" style="text-decoration:none;color:rgba(255,255,255,0.45);">Log out</a>
+      </div>
+
+    </nav>
+    <div class="nav-divider"></div>
+
+    <!-- Hero content -->
+    <div id="hero-main">
+      <h1 class="hero-headline">
+        <span>Know </span><span class="hero-headline-gradient">Everyone</span>
+      </h1>
+      <p class="hero-subtitle">AI-researched briefings on every attendee —<br>before you ever walk into the room.</p>
+      <button class="btn-hero-secondary hero-cta" onclick="document.getElementById('app-section').scrollIntoView({behavior:'smooth'})">
+        Prep My Next Meeting
+      </button>
     </div>
 
-    <div id="panel-text" class="panel active">
-      <textarea id="meeting-text"
-        placeholder="Paste your meeting invite here&#10;&#10;e.g. &quot;Meeting with Sarah Chen (sarah@stripe.com) on Friday at 2pm to discuss Q2 roadmap&quot;"></textarea>
-    </div>
-
-    <div id="panel-ics" class="panel">
-      <div class="file-drop" id="file-drop">
-        <input type="file" id="ics-file" accept=".ics" onchange="handleFileSelect(this)">
-        <div class="drop-icon">📅</div>
-        <p class="drop-hint">Drag & drop your .ics file, or click to browse</p>
-        <div class="file-selected" id="file-name"></div>
+    <!-- Logo marquee -->
+    <div id="hero-marquee">
+      <div class="marquee-inner">
+        <div class="marquee-label">Built for every<br>meeting that matters</div>
+        <div class="marquee-track-wrapper">
+          <div class="marquee-track">
+            <!-- First set -->
+            <div class="marquee-logo-item">
+              <div class="liquid-glass marquee-logo-icon" style="border-radius:6px;">S</div>
+              <span class="marquee-logo-name">Sales Calls</span>
+            </div>
+            <div class="marquee-logo-item">
+              <div class="liquid-glass marquee-logo-icon" style="border-radius:6px;">C</div>
+              <span class="marquee-logo-name">Client Reviews</span>
+            </div>
+            <div class="marquee-logo-item">
+              <div class="liquid-glass marquee-logo-icon" style="border-radius:6px;">J</div>
+              <span class="marquee-logo-name">Job Interviews</span>
+            </div>
+            <div class="marquee-logo-item">
+              <div class="liquid-glass marquee-logo-icon" style="border-radius:6px;">B</div>
+              <span class="marquee-logo-name">Board Meetings</span>
+            </div>
+            <div class="marquee-logo-item">
+              <div class="liquid-glass marquee-logo-icon" style="border-radius:6px;">P</div>
+              <span class="marquee-logo-name">Partner Syncs</span>
+            </div>
+            <div class="marquee-logo-item">
+              <div class="liquid-glass marquee-logo-icon" style="border-radius:6px;">T</div>
+              <span class="marquee-logo-name">Team Standups</span>
+            </div>
+            <!-- Duplicate set for seamless loop -->
+            <div class="marquee-logo-item">
+              <div class="liquid-glass marquee-logo-icon" style="border-radius:6px;">S</div>
+              <span class="marquee-logo-name">Sales Calls</span>
+            </div>
+            <div class="marquee-logo-item">
+              <div class="liquid-glass marquee-logo-icon" style="border-radius:6px;">C</div>
+              <span class="marquee-logo-name">Client Reviews</span>
+            </div>
+            <div class="marquee-logo-item">
+              <div class="liquid-glass marquee-logo-icon" style="border-radius:6px;">J</div>
+              <span class="marquee-logo-name">Job Interviews</span>
+            </div>
+            <div class="marquee-logo-item">
+              <div class="liquid-glass marquee-logo-icon" style="border-radius:6px;">B</div>
+              <span class="marquee-logo-name">Board Meetings</span>
+            </div>
+            <div class="marquee-logo-item">
+              <div class="liquid-glass marquee-logo-icon" style="border-radius:6px;">P</div>
+              <span class="marquee-logo-name">Partner Syncs</span>
+            </div>
+            <div class="marquee-logo-item">
+              <div class="liquid-glass marquee-logo-icon" style="border-radius:6px;">T</div>
+              <span class="marquee-logo-name">Team Standups</span>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
 
-    <div class="error-box" id="error-box"></div>
-
-    <button class="btn btn-primary" id="generate-btn" onclick="startJob()">
-      Generate Briefing
-    </button>
   </div>
+</div>
 
-  <!-- Loading -->
-  <div class="card" id="loading-section">
-    <div class="spinner-wrap">
-      <div class="spinner-glow"></div>
-      <div class="spinner"></div>
-    </div>
-    <p class="loading-label">Running research agent…</p>
-    <div class="status-log" id="status-log"></div>
-  </div>
-
-  <!-- Result -->
-  <div class="card" id="result-section">
-    <div class="result-header">
-      <span class="result-title">Briefing ready</span>
-      <div class="result-actions">
-        <button class="btn btn-ghost" onclick="resetForm()">New Briefing</button>
-        <button class="btn btn-ghost" onclick="downloadBriefing()">↓ Download .md</button>
+<!-- ===== HOW IT WORKS ===== -->
+<div class="section-divider"></div>
+<section id="how-it-works" class="content-section">
+  <div class="section-blur"></div>
+  <div class="section-inner">
+    <p class="section-eyebrow">How It Works</p>
+    <h2 class="section-title">3 simple steps</h2>
+    <div class="steps-grid">
+      <div class="step-card">
+        <span class="step-number">01</span>
+        <h3>Paste your meeting details</h3>
+        <p>Drop in a calendar invite or type who you're meeting</p>
+      </div>
+      <div class="step-card">
+        <span class="step-number">02</span>
+        <h3>Agent researches automatically</h3>
+        <p>Searches LinkedIn, company news, and recent activity in real time</p>
+      </div>
+      <div class="step-card">
+        <span class="step-number">03</span>
+        <h3>Get your briefing</h3>
+        <p>Walk in knowing their background, talking points, and what matters to them</p>
       </div>
     </div>
-    <div class="md-body" id="md-output"></div>
   </div>
+</section>
 
+<!-- ===== FEATURES ===== -->
+<div class="section-divider"></div>
+<section id="features" class="content-section">
+  <div class="section-blur"></div>
+  <div class="section-inner">
+    <p class="section-eyebrow">Features</p>
+    <h2 class="section-title">Everything you need<br>before the meeting</h2>
+    <div class="features-grid">
+      <div class="feature-card">
+        <span class="feature-emoji">🔍</span>
+        <div>
+          <h3>Attendee Research</h3>
+          <p>Background, role, and LinkedIn highlights for everyone in the room</p>
+        </div>
+      </div>
+      <div class="feature-card">
+        <span class="feature-emoji">📰</span>
+        <div>
+          <h3>Live Company News</h3>
+          <p>Pulls recent news and announcements automatically</p>
+        </div>
+      </div>
+      <div class="feature-card">
+        <span class="feature-emoji">💬</span>
+        <div>
+          <h3>Personalized Talking Points</h3>
+          <p>Tailored to your background and goals</p>
+        </div>
+      </div>
+      <div class="feature-card">
+        <span class="feature-emoji">📄</span>
+        <div>
+          <h3>Downloadable Briefing</h3>
+          <p>Save as a markdown file and keep it forever</p>
+        </div>
+      </div>
+      <div class="feature-card">
+        <span class="feature-emoji">📅</span>
+        <div>
+          <h3>ICS File Support</h3>
+          <p>Upload directly from Google Calendar or any calendar app</p>
+        </div>
+      </div>
+      <div class="feature-card">
+        <span class="feature-emoji">⚡</span>
+        <div>
+          <h3>Real-Time Status</h3>
+          <p>Watch the research happen live as the agent works</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== USE CASES ===== -->
+<div class="section-divider"></div>
+<section id="use-cases" class="content-section">
+  <div class="section-blur"></div>
+  <div class="section-inner">
+    <p class="section-eyebrow">Use Cases</p>
+    <h2 class="section-title">Built for every<br>meeting that matters</h2>
+    <div class="use-cases-grid">
+      <div class="use-case-card">
+        <h3>Job Interviews</h3>
+        <p>Research your interviewer before you walk in</p>
+      </div>
+      <div class="use-case-card">
+        <h3>Sales Calls</h3>
+        <p>Know the company's pain points before pitching</p>
+      </div>
+      <div class="use-case-card">
+        <h3>Board Meetings</h3>
+        <p>Prep on every stakeholder in the room</p>
+      </div>
+      <div class="use-case-card">
+        <h3>Partner Syncs</h3>
+        <p>Understand who you're negotiating with</p>
+      </div>
+      <div class="use-case-card">
+        <h3>Networking Events</h3>
+        <p>Never go in cold again</p>
+      </div>
+    </div>
+  </div>
+</section>
+<div class="section-divider"></div>
+
+<!-- ===== APP SECTION ===== -->
+<div id="app-section">
+  <div class="app-blur-overlay"></div>
+  <div class="container">
+
+    <header>
+      <div class="header-badge"><span>✦</span> AI-Powered</div>
+      <h1>Meeting Prep Agent</h1>
+      <p>Research your attendees and generate a structured briefing in seconds</p>
+    </header>
+
+    <div class="card" id="input-section">
+
+      {% if google_connected %}
+      <div class="upcoming-section" id="upcoming-section">
+        <div class="upcoming-header">
+          <span class="upcoming-title">Upcoming Meetings</span>
+          <a href="{{ url_for('disconnect_google') }}" class="upcoming-connect" style="color:var(--text-muted);font-size:0.7rem;">Disconnect</a>
+        </div>
+        <div class="upcoming-list" id="upcoming-list">
+          <div class="upcoming-empty">Loading your calendar…</div>
+        </div>
+      </div>
+      <hr class="upcoming-divider">
+      {% elif google_configured %}
+      <div class="upcoming-section">
+        <div class="upcoming-header">
+          <span class="upcoming-title">Upcoming Meetings</span>
+        </div>
+        <a href="{{ url_for('connect_google') }}" class="upcoming-connect">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+          Connect Google Calendar to see your meetings here
+        </a>
+      </div>
+      <hr class="upcoming-divider">
+      {% endif %}
+
+      <div class="selected-meeting-banner" id="selected-banner">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+        <span id="selected-banner-text"></span>
+        <button class="banner-clear" onclick="clearCalendarSelection()" title="Clear">✕</button>
+      </div>
+
+      <div class="tabs" id="manual-tabs">
+        <button class="tab active" onclick="switchTab('text')">Paste Text</button>
+        <button class="tab" onclick="switchTab('ics')">Upload .ics File</button>
+      </div>
+
+      <div id="panel-text" class="panel active">
+        <textarea id="meeting-text"
+          placeholder="Paste your meeting invite here&#10;&#10;e.g. &quot;Meeting with Sarah Chen (sarah@stripe.com) on Friday at 2pm to discuss Q2 roadmap&quot;"></textarea>
+      </div>
+
+      <div id="panel-ics" class="panel">
+        <div class="file-drop" id="file-drop">
+          <input type="file" id="ics-file" accept=".ics" onchange="handleFileSelect(this)">
+          <div class="drop-icon">📅</div>
+          <p class="drop-hint">Drag &amp; drop your .ics file, or click to browse</p>
+          <div class="file-selected" id="file-name"></div>
+        </div>
+      </div>
+
+      <div class="meeting-type-row">
+        <span class="meeting-type-label">Meeting type</span>
+        <select id="meeting-type" class="meeting-type-select">
+          <option value="general">General Meeting</option>
+          <option value="job_interview">Job Interview</option>
+          <option value="sales_call">Sales Call</option>
+          <option value="networking">Networking</option>
+          <option value="discovery_call">Discovery Call</option>
+          <option value="one_on_one">1:1 / Check-in</option>
+        </select>
+      </div>
+
+      <div class="context-field">
+        <label class="context-label" for="user-context">
+          Your background &amp; goals <span class="optional">(pre-filled from your profile)</span>
+        </label>
+        <textarea id="user-context" placeholder="e.g. MIS student interested in enterprise software, AI tools, and business strategy">{{ profile_bio }}</textarea>
+      </div>
+
+      <div class="error-box" id="error-box"></div>
+
+      <button class="btn btn-primary" id="generate-btn" onclick="startJob()">
+        Generate Briefing
+      </button>
+    </div>
+
+    <div class="card" id="loading-section">
+      <div class="spinner-wrap">
+        <div class="spinner-glow"></div>
+        <div class="spinner"></div>
+      </div>
+      <p class="loading-label">Running research agent…</p>
+      <div class="status-log" id="status-log"></div>
+    </div>
+
+    <div class="card" id="result-section">
+      <div class="result-header">
+        <span class="result-title">Briefing ready</span>
+        <div class="result-actions">
+          <button class="btn btn-ghost" onclick="resetForm()">New Briefing</button>
+          <button class="btn btn-ghost" onclick="downloadBriefing()">↓ Download .md</button>
+        </div>
+      </div>
+      <div class="md-body" id="md-output"></div>
+    </div>
+
+  </div>
 </div>
 
 <script>
+  // ===== VIDEO FADE LOOP =====
+  (function () {
+    const video = document.getElementById('hero-video');
+    let fadeFrame;
+    let fadingOut = false;
+
+    function animateFade(from, to, duration, onComplete) {
+      cancelAnimationFrame(fadeFrame);
+      const startTime = performance.now();
+      function step(now) {
+        const t = Math.min((now - startTime) / duration, 1);
+        video.style.opacity = from + (to - from) * t;
+        if (t < 1) {
+          fadeFrame = requestAnimationFrame(step);
+        } else if (onComplete) {
+          onComplete();
+        }
+      }
+      fadeFrame = requestAnimationFrame(step);
+    }
+
+    function onTimeUpdate() {
+      if (!fadingOut && video.duration && video.currentTime >= video.duration - 0.5) {
+        fadingOut = true;
+        animateFade(1, 0, 500, null);
+      }
+    }
+
+    function onEnded() {
+      fadingOut = false;
+      video.style.opacity = 0;
+      setTimeout(function () {
+        video.currentTime = 0;
+        video.play().catch(function () {});
+        animateFade(0, 1, 500, null);
+      }, 100);
+    }
+
+    video.addEventListener('timeupdate', onTimeUpdate);
+    video.addEventListener('ended', onEnded);
+    video.play().catch(function () {});
+    animateFade(0, 1, 500, null);
+  })();
+
+  // ===== APP LOGIC =====
   let currentTab = 'text';
   let currentJobId = null;
+  let currentBriefingId = null;
   let pollTimer = null;
+  let selectedCalendarEvent = null;
+
+  // ===== GOOGLE CALENDAR =====
+  {% if google_connected %}
+  (async function loadUpcoming() {
+    const list = document.getElementById('upcoming-list');
+    try {
+      const res = await fetch('/api/upcoming-meetings');
+      const data = await res.json();
+      if (!res.ok || data.error) { list.innerHTML = '<div class="upcoming-empty">Could not load calendar.</div>'; return; }
+      if (!data.length) { list.innerHTML = '<div class="upcoming-empty">No meetings with others in the next 7 days.</div>'; return; }
+      list.innerHTML = '';
+      data.forEach(ev => {
+        const dt = ev.datetime ? new Date(ev.datetime) : null;
+        const dtStr = dt ? dt.toLocaleDateString('en-US', {weekday:'short', month:'short', day:'numeric', hour:'numeric', minute:'2-digit'}) : '';
+        const count = ev.attendees.length;
+        const btn = document.createElement('button');
+        btn.className = 'upcoming-item';
+        btn.innerHTML = `
+          <div class="upcoming-dot"></div>
+          <div class="upcoming-info">
+            <div class="upcoming-name">${ev.title}</div>
+            <div class="upcoming-meta">${dtStr}${dtStr && count ? ' · ' : ''}${count} attendee${count !== 1 ? 's' : ''}</div>
+          </div>
+          <span class="upcoming-arrow">→</span>`;
+        btn.onclick = () => selectCalendarEvent(ev, btn);
+        list.appendChild(btn);
+      });
+    } catch { list.innerHTML = '<div class="upcoming-empty">Could not load calendar.</div>'; }
+  })();
+  {% endif %}
+
+  function selectCalendarEvent(ev, btn) {
+    document.querySelectorAll('.upcoming-item').forEach(b => b.classList.remove('selected'));
+    btn.classList.add('selected');
+    selectedCalendarEvent = ev;
+    const banner = document.getElementById('selected-banner');
+    const dt = ev.datetime ? new Date(ev.datetime) : null;
+    const dtStr = dt ? dt.toLocaleDateString('en-US', {weekday:'short', month:'short', day:'numeric', hour:'numeric', minute:'2-digit'}) : '';
+    document.getElementById('selected-banner-text').textContent = `${ev.title}${dtStr ? ' · ' + dtStr : ''}`;
+    banner.classList.add('visible');
+    document.getElementById('manual-tabs').style.opacity = '0.4';
+    document.getElementById('manual-tabs').style.pointerEvents = 'none';
+    document.getElementById('panel-text').style.opacity = '0.4';
+    document.getElementById('panel-text').style.pointerEvents = 'none';
+    document.getElementById('panel-ics').style.opacity = '0.4';
+    document.getElementById('panel-ics').style.pointerEvents = 'none';
+  }
+
+  function clearCalendarSelection() {
+    selectedCalendarEvent = null;
+    document.querySelectorAll('.upcoming-item').forEach(b => b.classList.remove('selected'));
+    document.getElementById('selected-banner').classList.remove('visible');
+    document.getElementById('manual-tabs').style.opacity = '';
+    document.getElementById('manual-tabs').style.pointerEvents = '';
+    document.getElementById('panel-text').style.opacity = '';
+    document.getElementById('panel-text').style.pointerEvents = '';
+    document.getElementById('panel-ics').style.opacity = '';
+    document.getElementById('panel-ics').style.pointerEvents = '';
+  }
   let seenMessages = 0;
 
-  // --- Tab switching ---
   function switchTab(tab) {
     currentTab = tab;
     document.querySelectorAll('.tab').forEach((el, i) => {
@@ -543,12 +1508,10 @@
     document.getElementById('panel-ics').classList.toggle('active', tab === 'ics');
   }
 
-  // --- File select ---
   function handleFileSelect(input) {
     document.getElementById('file-name').textContent = input.files[0]?.name || '';
   }
 
-  // Drag-and-drop
   const dropZone = document.getElementById('file-drop');
   dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('dragover'); });
   dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
@@ -564,7 +1527,6 @@
     }
   });
 
-  // --- Error helpers ---
   function showError(msg) {
     const el = document.getElementById('error-box');
     el.textContent = msg;
@@ -575,12 +1537,11 @@
     document.getElementById('error-box').style.display = 'none';
   }
 
-  // Show a section with fade-up animation
   function showSection(id) {
     const el = document.getElementById(id);
     el.style.display = 'block';
     el.classList.remove('anim');
-    void el.offsetWidth; // reflow to restart animation
+    void el.offsetWidth;
     el.classList.add('anim');
   }
 
@@ -588,13 +1549,17 @@
     document.getElementById(id).style.display = 'none';
   }
 
-  // --- Submit ---
   async function startJob() {
     clearError();
-
     const fd = new FormData();
+    const userContext = document.getElementById('user-context').value.trim();
+    if (userContext) fd.append('user_context', userContext);
+    fd.append('meeting_type', document.getElementById('meeting-type').value);
 
-    if (currentTab === 'text') {
+    if (selectedCalendarEvent) {
+      fd.append('input_type', 'calendar');
+      fd.append('calendar_data', JSON.stringify(selectedCalendarEvent));
+    } else if (currentTab === 'text') {
       const text = document.getElementById('meeting-text').value.trim();
       if (!text) { showError('Please paste meeting details first.'); return; }
       fd.append('input_type', 'text');
@@ -623,12 +1588,10 @@
     }
   }
 
-  // --- Polling ---
   async function poll() {
     try {
       const res = await fetch(`/status/${currentJobId}`);
       const data = await res.json();
-
       const log = document.getElementById('status-log');
       for (let i = seenMessages; i < data.messages.length; i++) {
         const line = document.createElement('div');
@@ -638,9 +1601,9 @@
         log.scrollTop = log.scrollHeight;
       }
       seenMessages = data.messages.length;
-
       if (data.status === 'done') {
         clearInterval(pollTimer);
+        currentBriefingId = data.briefing_id;
         showResult(data.result);
       } else if (data.status === 'error') {
         clearInterval(pollTimer);
@@ -652,34 +1615,33 @@
     }
   }
 
-  // --- Show result ---
   function showResult(markdown) {
     hideSection('loading-section');
     showSection('result-section');
     document.getElementById('md-output').innerHTML = marked.parse(markdown);
   }
 
-  // --- Return to form with error ---
   function returnToForm(msg) {
     hideSection('loading-section');
     showSection('input-section');
     showError(msg);
   }
 
-  // --- Download ---
   function downloadBriefing() {
-    if (currentJobId) window.location.href = `/download/${currentJobId}`;
+    if (currentBriefingId) window.location.href = `/download/${currentBriefingId}`;
   }
 
-  // --- Reset ---
   function resetForm() {
     hideSection('result-section');
     showSection('input-section');
     document.getElementById('meeting-text').value = '';
+    document.getElementById('user-context').value = '{{ profile_bio | e }}';
     document.getElementById('ics-file').value = '';
     document.getElementById('file-name').textContent = '';
+    clearCalendarSelection();
     clearError();
     currentJobId = null;
+    currentBriefingId = null;
   }
 </script>
 </body>
