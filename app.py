@@ -11,14 +11,16 @@ from dotenv import load_dotenv
 from flask import Flask, flash, jsonify, redirect, render_template, request, send_file, session, url_for
 from flask_login import LoginManager, current_user, login_required, login_user, logout_user
 from flask_mail import Mail, Message
+from sqlalchemy.exc import IntegrityError
 from flask_wtf import FlaskForm
 from wtforms import PasswordField, StringField, SubmitField
 from wtforms.validators import DataRequired, Email, EqualTo, Length, ValidationError
 
 load_dotenv()
 
-# Allow OAuth over HTTP for local dev
-os.environ.setdefault("OAUTHLIB_INSECURE_TRANSPORT", "1")
+# Allow OAuth over HTTP in local dev only — must be off in production
+if os.getenv("FLASK_ENV") != "production":
+    os.environ.setdefault("OAUTHLIB_INSECURE_TRANSPORT", "1")
 
 ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY")
 TAVILY_API_KEY = os.getenv("TAVILY_API_KEY")
@@ -41,14 +43,37 @@ app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 app.config["MAIL_SERVER"] = "smtp.gmail.com"
 app.config["MAIL_PORT"] = 587
 app.config["MAIL_USE_TLS"] = True
-app.config["MAIL_USERNAME"] = os.getenv("MAIL_USERNAME", "")
-app.config["MAIL_PASSWORD"] = os.getenv("MAIL_PASSWORD", "")
-app.config["MAIL_DEFAULT_SENDER"] = ("MeetPrep", os.getenv("MAIL_USERNAME", ""))
+mail_username = os.getenv("MAIL_USERNAME") or os.getenv("MY_EMAIL", "")
+mail_password = os.getenv("MAIL_PASSWORD") or os.getenv("APP_PASSWORD", "")
+default_sender = os.getenv("FROM_EMAIL") or mail_username
+app.config["MAIL_USERNAME"] = mail_username
+app.config["MAIL_PASSWORD"] = mail_password
+app.config["MAIL_DEFAULT_SENDER"] = ("MeetPrep", default_sender)
 
-from models import Briefing, User, db  # noqa: E402
+from models import Briefing, DailyUsage, User, db  # noqa: E402
 
 db.init_app(app)
 mail = Mail(app)
+
+def _init_db():
+    """Create all tables and run lightweight column migrations."""
+    import sys
+    with app.app_context():
+        try:
+            db.create_all()
+            print("[startup] db.create_all() OK", flush=True)
+        except Exception as e:
+            print(f"[startup] db.create_all() FAILED: {e}", file=sys.stderr, flush=True)
+            raise
+        with db.engine.connect() as conn:
+            for col, typedef in [("google_code_verifier", "VARCHAR(200)")]:
+                try:
+                    conn.execute(db.text(f"ALTER TABLE users ADD COLUMN {col} {typedef}"))
+                    conn.commit()
+                except Exception:
+                    conn.rollback()  # required in PostgreSQL after a failed statement
+
+_init_db()
 
 login_manager = LoginManager()
 login_manager.init_app(app)
@@ -184,6 +209,7 @@ def run_agent(
     user_context: str = "",
     user_email: str = "",
     user_id: str = None,
+    usage_date_utc: str = None,
     meeting_type: str = "general",
 ):
     with app.app_context():
@@ -277,6 +303,9 @@ def run_agent(
         except BaseException as e:
             jobs[job_id]["status"] = "error"
             jobs[job_id]["error"] = str(e) or "An unexpected error occurred."
+            db.session.rollback()
+            if user_id and usage_date_utc:
+                release_daily_slot(user_id, usage_date_utc)
         finally:
             if ics_path and os.path.exists(ics_path):
                 os.unlink(ics_path)
@@ -293,7 +322,9 @@ def connect_google():
     flow = _get_google_flow()
     auth_url, state = flow.authorization_url(access_type="offline", prompt="consent")
     session["google_oauth_state"] = state
-    session["google_code_verifier"] = getattr(flow, "code_verifier", None)
+    # Persist the PKCE code verifier in the DB so it survives session regeneration on login
+    current_user.google_code_verifier = getattr(flow, "code_verifier", None)
+    db.session.commit()
     return redirect(auth_url)
 
 
@@ -301,9 +332,11 @@ def connect_google():
 @login_required
 def oauth2callback():
     flow = _get_google_flow()
-    code_verifier = session.pop("google_code_verifier", None)
+    # Read the PKCE code verifier from the DB (survives session regeneration during login)
+    code_verifier = current_user.google_code_verifier
     if code_verifier:
         flow.code_verifier = code_verifier
+        current_user.google_code_verifier = None  # clear after use
     flow.fetch_token(authorization_response=request.url)
     creds = flow.credentials
     current_user.google_credentials = json.dumps({
@@ -438,6 +471,8 @@ def forgot_password():
             db.session.commit()
             reset_url = url_for("reset_password", token=token, _external=True)
             try:
+                if not app.config.get("MAIL_USERNAME") or not app.config.get("MAIL_PASSWORD"):
+                    raise RuntimeError("MAIL_USERNAME/MAIL_PASSWORD not configured for reset email sending.")
                 msg = Message(
                     subject="Reset your MeetPrep password",
                     recipients=[user.email],
@@ -454,7 +489,8 @@ def forgot_password():
                 )
                 mail.send(msg)
             except Exception as e:
-                print(f"Password reset email failed: {e}")
+                print(f"[AUTH] Password reset email failed for {user.email}: {e}")
+                print(f"[AUTH] Reset link (debug): {reset_url}")
         # Always show success to avoid revealing which emails are registered
         sent = True
     return render_template("forgot_password.html", form=form, sent=sent)
@@ -481,14 +517,28 @@ def reset_password(token):
 # --- App routes ---
 
 @app.route("/")
-@login_required
 def index():
+    if current_user.is_authenticated:
+        used = usage_today_utc(current_user.id)
+        return render_template(
+            "index.html",
+            user=current_user,
+            profile_bio=current_user.profile_bio or "",
+            google_connected=bool(current_user.google_credentials),
+            google_configured=bool(GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET),
+            daily_used=used,
+            daily_limit=DAILY_LIMIT,
+            daily_remaining=max(0, DAILY_LIMIT - used),
+        )
     return render_template(
         "index.html",
-        user=current_user,
-        profile_bio=current_user.profile_bio or "",
-        google_connected=bool(current_user.google_credentials),
-        google_configured=bool(GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET),
+        user=None,
+        profile_bio="",
+        google_connected=False,
+        google_configured=False,
+        daily_used=0,
+        daily_limit=DAILY_LIMIT,
+        daily_remaining=DAILY_LIMIT,
     )
 
 
@@ -548,21 +598,81 @@ def get_briefing(briefing_id):
     return jsonify({"title": record.title, "content": record.content})
 
 
+DAILY_LIMIT = 10
+
+
+def briefings_today(user_id: str) -> int:
+    today = datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
+    return Briefing.query.filter(
+        Briefing.user_id == user_id,
+        Briefing.created_at >= today,
+    ).count()
+
+
+def usage_today_utc(user_id: str) -> int:
+    today = datetime.utcnow().date()
+    record = DailyUsage.query.filter_by(user_id=user_id, usage_date_utc=today).first()
+    if record:
+        return record.count
+    # Backfill-safe fallback for users who already generated before daily_usage exists.
+    return briefings_today(user_id)
+
+
+def reserve_daily_slot(user_id: str):
+    today = datetime.utcnow().date()
+    today_iso = today.isoformat()
+
+    for _ in range(5):
+        updated = (
+            DailyUsage.query.filter_by(user_id=user_id, usage_date_utc=today)
+            .filter(DailyUsage.count < DAILY_LIMIT)
+            .update({DailyUsage.count: DailyUsage.count + 1}, synchronize_session=False)
+        )
+        if updated:
+            db.session.commit()
+            used = usage_today_utc(user_id)
+            return True, today_iso, used
+
+        existing = DailyUsage.query.filter_by(user_id=user_id, usage_date_utc=today).first()
+        if existing and existing.count >= DAILY_LIMIT:
+            db.session.rollback()
+            return False, today_iso, existing.count
+
+        try:
+            db.session.add(
+                DailyUsage(
+                    user_id=user_id,
+                    usage_date_utc=today,
+                    count=briefings_today(user_id),
+                )
+            )
+            db.session.commit()
+        except IntegrityError:
+            db.session.rollback()
+
+    used = usage_today_utc(user_id)
+    return False, today_iso, used
+
+
+def release_daily_slot(user_id: str, usage_date_utc: str):
+    try:
+        usage_date = datetime.fromisoformat(usage_date_utc).date()
+    except ValueError:
+        usage_date = datetime.utcnow().date()
+
+    (
+        DailyUsage.query.filter_by(user_id=user_id, usage_date_utc=usage_date)
+        .filter(DailyUsage.count > 0)
+        .update({DailyUsage.count: DailyUsage.count - 1}, synchronize_session=False)
+    )
+    db.session.commit()
+
+
 @app.route("/generate", methods=["POST"])
 @login_required
 def generate():
     if not ANTHROPIC_API_KEY or not TAVILY_API_KEY:
         return jsonify({"error": "API keys not configured on the server."}), 500
-
-    job_id = str(uuid.uuid4())
-    jobs[job_id] = {
-        "status": "running",
-        "messages": [],
-        "result": None,
-        "briefing_id": None,
-        "error": None,
-        "user_id": current_user.id,
-    }
 
     input_type = request.form.get("input_type", "text")
     user_context = request.form.get("user_context", "").strip()
@@ -574,34 +684,18 @@ def generate():
         calendar_data = request.form.get("calendar_data", "").strip()
         if not calendar_data:
             return jsonify({"error": "No calendar event data provided."}), 400
-        t = threading.Thread(
-            target=run_agent,
-            kwargs={
-                "job_id": job_id,
-                "input_type": "calendar",
-                "text": calendar_data,
-                "user_context": user_context,
-                "user_email": user_email,
-                "user_id": user_id,
-                "meeting_type": meeting_type,
-            },
-        )
+        thread_kwargs = {
+            "input_type": "calendar",
+            "text": calendar_data,
+        }
     elif input_type == "text":
         text = request.form.get("meeting_text", "").strip()
         if not text:
             return jsonify({"error": "No meeting text provided."}), 400
-        t = threading.Thread(
-            target=run_agent,
-            kwargs={
-                "job_id": job_id,
-                "input_type": "text",
-                "text": text,
-                "user_context": user_context,
-                "user_email": user_email,
-                "user_id": user_id,
-                "meeting_type": meeting_type,
-            },
-        )
+        thread_kwargs = {
+            "input_type": "text",
+            "text": text,
+        }
     else:
         file = request.files.get("ics_file")
         if not file or not file.filename:
@@ -609,18 +703,40 @@ def generate():
         tmp = tempfile.NamedTemporaryFile(delete=False, suffix=".ics")
         file.save(tmp.name)
         tmp.close()
-        t = threading.Thread(
-            target=run_agent,
-            kwargs={
-                "job_id": job_id,
-                "input_type": "ics",
-                "ics_path": tmp.name,
-                "user_context": user_context,
-                "user_email": user_email,
-                "user_id": user_id,
-                "meeting_type": meeting_type,
-            },
-        )
+        thread_kwargs = {
+            "input_type": "ics",
+            "ics_path": tmp.name,
+        }
+
+    allowed, usage_date_utc, used = reserve_daily_slot(current_user.id)
+    if not allowed:
+        if thread_kwargs.get("ics_path") and os.path.exists(thread_kwargs["ics_path"]):
+            os.unlink(thread_kwargs["ics_path"])
+        return jsonify({
+            "error": f"Daily limit reached ({DAILY_LIMIT} briefings/day). Try again tomorrow.",
+            "daily_used": used,
+            "daily_limit": DAILY_LIMIT,
+            "daily_remaining": 0,
+        }), 429
+
+    job_id = str(uuid.uuid4())
+    jobs[job_id] = {
+        "status": "running",
+        "messages": [],
+        "result": None,
+        "briefing_id": None,
+        "error": None,
+        "user_id": current_user.id,
+    }
+    thread_kwargs.update({
+        "job_id": job_id,
+        "user_context": user_context,
+        "user_email": user_email,
+        "user_id": user_id,
+        "usage_date_utc": usage_date_utc,
+        "meeting_type": meeting_type,
+    })
+    t = threading.Thread(target=run_agent, kwargs=thread_kwargs)
 
     t.daemon = True
     t.start()
@@ -657,6 +773,4 @@ def download(briefing_id):
 
 
 if __name__ == "__main__":
-    with app.app_context():
-        db.create_all()
     app.run(debug=True, port=5001)
