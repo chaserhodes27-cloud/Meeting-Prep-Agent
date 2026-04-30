@@ -1,9 +1,10 @@
 import uuid
-from datetime import datetime
+from datetime import date, datetime
 
 from flask_login import UserMixin
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug.security import check_password_hash, generate_password_hash
+from sqlalchemy import UniqueConstraint
 
 db = SQLAlchemy()
 
@@ -17,6 +18,7 @@ class User(UserMixin, db.Model):
     password_hash = db.Column(db.String(255), nullable=False)
     profile_bio = db.Column(db.Text, nullable=True)
     google_credentials = db.Column(db.Text, nullable=True)
+    google_code_verifier = db.Column(db.String(200), nullable=True)
     reset_token = db.Column(db.String(100), nullable=True)
     reset_token_expiry = db.Column(db.DateTime, nullable=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
@@ -40,3 +42,13 @@ class Briefing(db.Model):
     meeting_datetime = db.Column(db.DateTime, nullable=True)
     content = db.Column(db.Text, nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+
+class DailyUsage(db.Model):
+    __tablename__ = "daily_usage"
+    __table_args__ = (UniqueConstraint("user_id", "usage_date_utc", name="uq_daily_usage_user_date"),)
+
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.String(36), db.ForeignKey("users.id"), nullable=False, index=True)
+    usage_date_utc = db.Column(db.Date, nullable=False, index=True, default=date.today)
+    count = db.Column(db.Integer, nullable=False, default=0)
