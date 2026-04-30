@@ -20,7 +20,10 @@
       "Bash(lsof -ti:5001)",
       "Bash(xargs kill *)",
       "Bash(python3 -c \"from google_auth_oauthlib.flow import Flow; print\\('google_auth_oauthlib OK'\\)\")",
-      "Bash(python3 -c \"from google.oauth2.credentials import Credentials; print\\('google.oauth2 OK'\\)\")"
+      "Bash(python3 -c \"from google.oauth2.credentials import Credentials; print\\('google.oauth2 OK'\\)\")",
+      "Bash(git add *)",
+      "Bash(git commit -m ' *)",
+      "Bash(git push *)"
     ]
   }
 }

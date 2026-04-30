@@ -75,10 +75,7 @@
       gap: 1rem;
     }
 
-    .topnav-user {
-      font-size: 0.8rem;
-      color: var(--text-soft);
-    }
+    .topnav-user { font-size: 0.8rem; color: var(--text-soft); }
 
     .topnav-link {
       font-size: 0.8rem;
@@ -89,7 +86,6 @@
       border-radius: 6px;
       transition: background 0.2s;
     }
-
     .topnav-link:hover { background: rgba(167, 139, 250, 0.1); }
 
     .topnav-logout {
@@ -98,18 +94,22 @@
       text-decoration: none;
       transition: color 0.2s;
     }
-
     .topnav-logout:hover { color: var(--foreground); }
 
-    /* ===== MAIN CONTENT ===== */
+    /* ===== MAIN ===== */
     .main {
-      max-width: 800px;
+      max-width: 860px;
       margin: 0 auto;
       padding: 3rem 2rem;
     }
 
     .page-header {
-      margin-bottom: 2.5rem;
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 1rem;
+      margin-bottom: 2rem;
+      flex-wrap: wrap;
     }
 
     .page-title {
@@ -117,39 +117,10 @@
       font-size: 1.75rem;
       font-weight: 600;
       letter-spacing: -0.02em;
-      margin-bottom: 0.4rem;
+      margin-bottom: 0.3rem;
     }
 
-    .page-sub {
-      font-size: 0.875rem;
-      color: var(--text-soft);
-    }
-
-    /* ===== EMPTY STATE ===== */
-    .empty {
-      text-align: center;
-      padding: 4rem 2rem;
-      border: 1px dashed var(--border);
-      border-radius: 16px;
-    }
-
-    .empty-icon {
-      font-size: 2.5rem;
-      margin-bottom: 1rem;
-    }
-
-    .empty-title {
-      font-family: 'General Sans', sans-serif;
-      font-size: 1.1rem;
-      font-weight: 500;
-      margin-bottom: 0.5rem;
-    }
-
-    .empty-sub {
-      font-size: 0.875rem;
-      color: var(--text-muted);
-      margin-bottom: 1.5rem;
-    }
+    .page-sub { font-size: 0.875rem; color: var(--text-soft); }
 
     .btn-primary {
       display: inline-flex;
@@ -166,46 +137,195 @@
       text-decoration: none;
       cursor: pointer;
       transition: opacity 0.2s;
+      white-space: nowrap;
+    }
+    .btn-primary:hover { opacity: 0.88; }
+
+    /* ===== TOOLBAR ===== */
+    .toolbar {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      margin-bottom: 1.25rem;
+      flex-wrap: wrap;
     }
 
-    .btn-primary:hover { opacity: 0.88; }
+    .search-wrap {
+      position: relative;
+      flex: 1;
+      min-width: 180px;
+    }
+
+    .search-icon {
+      position: absolute;
+      left: 0.75rem;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 14px;
+      height: 14px;
+      color: var(--text-muted);
+      pointer-events: none;
+    }
+
+    .search-input {
+      width: 100%;
+      background: rgba(0,0,0,0.25);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 0.55rem 0.875rem 0.55rem 2.25rem;
+      font-family: inherit;
+      font-size: 0.85rem;
+      color: var(--foreground);
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    .search-input::placeholder { color: var(--text-muted); }
+    .search-input:focus {
+      border-color: var(--border-focus);
+      box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.12);
+    }
+
+    .filter-select {
+      background: rgba(0,0,0,0.25);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 0.55rem 2rem 0.55rem 0.875rem;
+      font-family: inherit;
+      font-size: 0.85rem;
+      color: var(--text-soft);
+      outline: none;
+      cursor: pointer;
+      appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='11' height='11' viewBox='0 0 24 24' fill='none' stroke='rgba(255,255,255,0.35)' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 0.65rem center;
+      transition: border-color 0.2s;
+      white-space: nowrap;
+    }
+    .filter-select:focus { border-color: var(--border-focus); outline: none; }
+    .filter-select option { background: hsl(260, 87%, 8%); }
+
+    .results-count {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      white-space: nowrap;
+      margin-left: auto;
+    }
+
+    .clear-btn {
+      background: none;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 0.5rem 0.875rem;
+      font-family: inherit;
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      cursor: pointer;
+      transition: color 0.2s, border-color 0.2s;
+      white-space: nowrap;
+      display: none;
+    }
+    .clear-btn.visible { display: block; }
+    .clear-btn:hover { color: var(--foreground); border-color: rgba(255,255,255,0.2); }
+
+    /* ===== EMPTY STATE ===== */
+    .empty {
+      text-align: center;
+      padding: 4rem 2rem;
+      border: 1px dashed var(--border);
+      border-radius: 16px;
+    }
+
+    .empty-icon { font-size: 2.5rem; margin-bottom: 1rem; }
+
+    .empty-title {
+      font-family: 'General Sans', sans-serif;
+      font-size: 1.1rem;
+      font-weight: 500;
+      margin-bottom: 0.5rem;
+    }
+
+    .empty-sub {
+      font-size: 0.875rem;
+      color: var(--text-muted);
+      margin-bottom: 1.5rem;
+    }
+
+    /* ===== NO RESULTS ===== */
+    #no-results {
+      display: none;
+      text-align: center;
+      padding: 3rem 2rem;
+      border: 1px dashed var(--border);
+      border-radius: 16px;
+      color: var(--text-muted);
+      font-size: 0.875rem;
+    }
 
     /* ===== BRIEFING LIST ===== */
     .briefing-list {
       display: flex;
       flex-direction: column;
-      gap: 0.75rem;
+      gap: 0.65rem;
     }
 
     .briefing-card {
       background: var(--surface);
       border: 1px solid var(--border);
       border-radius: 12px;
-      padding: 1.25rem 1.5rem;
+      padding: 1.1rem 1.4rem;
       display: flex;
       align-items: center;
       justify-content: space-between;
       gap: 1rem;
-      transition: border-color 0.2s;
+      transition: border-color 0.2s, background 0.2s;
     }
-
-    .briefing-card:hover { border-color: rgba(167, 139, 250, 0.3); }
+    .briefing-card:hover { border-color: rgba(167, 139, 250, 0.3); background: rgba(255,255,255,0.045); }
+    .briefing-card[data-hidden="true"] { display: none; }
 
     .briefing-info { flex: 1; min-width: 0; }
 
     .briefing-title {
       font-weight: 500;
       font-size: 0.9375rem;
-      margin-bottom: 0.25rem;
+      margin-bottom: 0.3rem;
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
     }
 
+    /* Highlight matched search text */
+    .briefing-title mark {
+      background: rgba(167, 139, 250, 0.25);
+      color: #c4b5fd;
+      border-radius: 2px;
+      padding: 0 1px;
+    }
+
     .briefing-meta {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      flex-wrap: wrap;
       font-size: 0.775rem;
       color: var(--text-muted);
     }
+
+    .type-badge {
+      display: inline-block;
+      padding: 0.12rem 0.45rem;
+      border-radius: 4px;
+      font-size: 0.7rem;
+      font-weight: 500;
+      white-space: nowrap;
+    }
+
+    .badge-job_interview  { background: rgba(251,191, 36,0.1); border: 1px solid rgba(251,191, 36,0.25); color: #fbbf24; }
+    .badge-sales_call     { background: rgba( 52,211,153,0.1); border: 1px solid rgba( 52,211,153,0.25); color: #34d399; }
+    .badge-networking     { background: rgba( 96,165,250,0.1); border: 1px solid rgba( 96,165,250,0.25); color: #60a5fa; }
+    .badge-discovery_call { background: rgba(249,115, 22,0.1); border: 1px solid rgba(249,115, 22,0.25); color: #f97316; }
+    .badge-one_on_one     { background: rgba(167,139,250,0.1); border: 1px solid rgba(167,139,250,0.25); color: #a78bfa; }
+    .badge-general        { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.12); color: var(--text-soft); }
 
     .briefing-actions {
       display: flex;
@@ -214,7 +334,7 @@
     }
 
     .btn-view {
-      padding: 0.4rem 0.875rem;
+      padding: 0.38rem 0.85rem;
       background: rgba(167, 139, 250, 0.1);
       border: 1px solid rgba(167, 139, 250, 0.25);
       border-radius: 6px;
@@ -226,11 +346,10 @@
       transition: background 0.2s;
       white-space: nowrap;
     }
-
-    .btn-view:hover { background: rgba(167, 139, 250, 0.2); }
+    .btn-view:hover { background: rgba(167, 139, 250, 0.22); }
 
     .btn-dl {
-      padding: 0.4rem 0.875rem;
+      padding: 0.38rem 0.85rem;
       background: transparent;
       border: 1px solid var(--border);
       border-radius: 6px;
@@ -239,11 +358,12 @@
       font-size: 0.775rem;
       font-weight: 500;
       text-decoration: none;
+      display: inline-flex;
+      align-items: center;
       cursor: pointer;
       transition: border-color 0.2s, color 0.2s;
       white-space: nowrap;
     }
-
     .btn-dl:hover { border-color: rgba(255,255,255,0.2); color: var(--foreground); }
 
     /* ===== MODAL ===== */
@@ -251,32 +371,34 @@
       display: none;
       position: fixed;
       inset: 0;
-      background: rgba(0,0,0,0.7);
+      background: rgba(0,0,0,0.72);
       z-index: 100;
       align-items: center;
       justify-content: center;
       padding: 1.5rem;
+      backdrop-filter: blur(4px);
     }
-
     .modal-overlay.open { display: flex; }
 
     .modal {
       background: hsl(260, 60%, 6%);
-      border: 1px solid var(--border);
+      border: 1px solid rgba(255,255,255,0.1);
       border-radius: 16px;
       width: 100%;
-      max-width: 720px;
-      max-height: 80vh;
+      max-width: 740px;
+      max-height: 82vh;
       display: flex;
       flex-direction: column;
       overflow: hidden;
+      box-shadow: 0 32px 80px rgba(0,0,0,0.6);
     }
 
     .modal-header {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 1.25rem 1.5rem;
+      gap: 1rem;
+      padding: 1.1rem 1.5rem;
       border-bottom: 1px solid var(--border);
       flex-shrink: 0;
     }
@@ -285,50 +407,71 @@
       font-family: 'General Sans', sans-serif;
       font-size: 1rem;
       font-weight: 600;
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
     }
+
+    .modal-header-actions { display: flex; align-items: center; gap: 0.5rem; flex-shrink: 0; }
+
+    .modal-dl {
+      padding: 0.35rem 0.8rem;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      background: transparent;
+      color: var(--text-soft);
+      font-family: inherit;
+      font-size: 0.775rem;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      transition: border-color 0.2s, color 0.2s;
+      white-space: nowrap;
+    }
+    .modal-dl:hover { border-color: rgba(255,255,255,0.2); color: var(--foreground); }
 
     .modal-close {
       background: none;
       border: none;
       color: var(--text-muted);
-      font-size: 1.25rem;
+      font-size: 1.2rem;
       cursor: pointer;
       line-height: 1;
       padding: 0.25rem;
       transition: color 0.2s;
+      flex-shrink: 0;
     }
-
     .modal-close:hover { color: var(--foreground); }
 
     .modal-body {
       overflow-y: auto;
       padding: 1.5rem;
+      scrollbar-width: thin;
+      scrollbar-color: rgba(255,255,255,0.1) transparent;
     }
+    .modal-body::-webkit-scrollbar { width: 5px; }
+    .modal-body::-webkit-scrollbar-track { background: transparent; }
+    .modal-body::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 4px; }
 
-    /* Markdown styles inside modal */
-    .modal-body h1, .modal-body h2, .modal-body h3 {
-      font-family: 'General Sans', sans-serif;
-      font-weight: 600;
-      margin: 1.25rem 0 0.5rem;
-      color: var(--text-primary);
+    .modal-body h1 { font-family:'General Sans',sans-serif; font-size:1.3rem; font-weight:600; margin-bottom:1rem; color:var(--text-primary); }
+    .modal-body h2 { font-family:'General Sans',sans-serif; font-size:0.7rem; font-weight:700; letter-spacing:0.1em; text-transform:uppercase; color:#a78bfa; margin-top:1.75rem; margin-bottom:0.5rem; }
+    .modal-body h3 { font-size:0.95rem; font-weight:600; color:var(--text-primary); margin-top:1rem; margin-bottom:0.35rem; }
+    .modal-body p  { font-size:0.875rem; color:var(--text-soft); line-height:1.65; margin-bottom:0.6rem; }
+    .modal-body ul, .modal-body ol { padding-left:1.25rem; margin-bottom:0.65rem; }
+    .modal-body li { font-size:0.875rem; color:var(--text-soft); line-height:1.6; margin-bottom:0.2rem; }
+    .modal-body strong { color:var(--text-primary); font-weight:600; }
+    .modal-body hr { border:none; border-top:1px solid var(--border); margin:1.1rem 0; }
+
+    @media (max-width: 600px) {
+      .main { padding: 2rem 1rem; }
+      .topnav { padding: 1rem; }
+      .toolbar { gap: 0.5rem; }
+      .results-count { display: none; }
+      .briefing-card { flex-direction: column; align-items: flex-start; }
+      .briefing-actions { width: 100%; }
+      .btn-view, .btn-dl { flex: 1; justify-content: center; }
     }
-
-    .modal-body h1 { font-size: 1.3rem; margin-top: 0; }
-    .modal-body h2 { font-size: 1.1rem; }
-    .modal-body h3 { font-size: 0.95rem; }
-
-    .modal-body p { font-size: 0.875rem; color: var(--text-soft); line-height: 1.65; margin-bottom: 0.75rem; }
-
-    .modal-body ul, .modal-body ol {
-      padding-left: 1.25rem;
-      margin-bottom: 0.75rem;
-    }
-
-    .modal-body li { font-size: 0.875rem; color: var(--text-soft); line-height: 1.6; margin-bottom: 0.25rem; }
-
-    .modal-body strong { color: var(--text-primary); font-weight: 600; }
-
-    .modal-body hr { border: none; border-top: 1px solid var(--border); margin: 1rem 0; }
   </style>
 </head>
 <body>
@@ -350,8 +493,13 @@
 <!-- Main -->
 <main class="main">
   <div class="page-header">
-    <h1 class="page-title">My Briefings</h1>
-    <p class="page-sub">All your generated meeting briefings, saved automatically.</p>
+    <div>
+      <h1 class="page-title">My Briefings</h1>
+      <p class="page-sub">{{ briefings | length }} briefing{{ 's' if briefings | length != 1 else '' }} saved</p>
+    </div>
+    {% if briefings %}
+    <a class="btn-primary" href="/">+ New Briefing</a>
+    {% endif %}
   </div>
 
   {% if not briefings %}
@@ -362,26 +510,59 @@
     <a class="btn-primary" href="/">Prep a Meeting</a>
   </div>
   {% else %}
-  <div class="briefing-list">
+
+  <!-- Toolbar -->
+  <div class="toolbar">
+    <div class="search-wrap">
+      <svg class="search-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+      </svg>
+      <input class="search-input" id="search" type="text" placeholder="Search briefings…" oninput="applyFilters()" autocomplete="off">
+    </div>
+
+    <select class="filter-select" id="type-filter" onchange="applyFilters()">
+      <option value="">All types</option>
+      <option value="general">General</option>
+      <option value="job_interview">Job Interview</option>
+      <option value="sales_call">Sales Call</option>
+      <option value="networking">Networking</option>
+      <option value="discovery_call">Discovery Call</option>
+      <option value="one_on_one">1:1 / Check-in</option>
+    </select>
+
+    <select class="filter-select" id="sort-order" onchange="applyFilters()">
+      <option value="newest">Newest first</option>
+      <option value="oldest">Oldest first</option>
+    </select>
+
+    <span class="results-count" id="results-count"></span>
+    <button class="clear-btn" id="clear-btn" onclick="clearFilters()">Clear filters</button>
+  </div>
+
+  <div class="briefing-list" id="briefing-list">
+    {% set type_labels = {
+      'job_interview': 'Job Interview',
+      'sales_call': 'Sales Call',
+      'networking': 'Networking',
+      'discovery_call': 'Discovery Call',
+      'one_on_one': '1:1',
+      'general': 'General'
+    } %}
     {% for b in briefings %}
-    <div class="briefing-card">
+    <div class="briefing-card"
+         data-id="{{ b.id }}"
+         data-title="{{ b.title | lower }}"
+         data-type="{{ b.meeting_type or 'general' }}"
+         data-created="{{ b.created_at.isoformat() }}">
       <div class="briefing-info">
-        <div class="briefing-title">{{ b.title }}</div>
+        <div class="briefing-title" id="title-{{ b.id }}">{{ b.title }}</div>
         <div class="briefing-meta">
-          {% set type_labels = {
-            'job_interview': 'Job Interview',
-            'sales_call': 'Sales Call',
-            'networking': 'Networking',
-            'discovery_call': 'Discovery Call',
-            'one_on_one': '1:1',
-            'general': 'General'
-          } %}
-          {% if b.meeting_type and b.meeting_type != 'general' %}
-            <span style="display:inline-block;padding:0.15rem 0.5rem;background:rgba(167,139,250,0.12);border:1px solid rgba(167,139,250,0.25);border-radius:4px;font-size:0.7rem;color:#a78bfa;margin-right:0.4rem;">{{ type_labels.get(b.meeting_type, b.meeting_type) }}</span>
-          {% endif %}
-          Generated {{ b.created_at.strftime('%b %d, %Y') }}
+          <span class="type-badge badge-{{ b.meeting_type or 'general' }}">
+            {{ type_labels.get(b.meeting_type, 'General') }}
+          </span>
+          <span>{{ b.created_at.strftime('%b %d, %Y') }}</span>
           {% if b.meeting_datetime %}
-           · Meeting {{ b.meeting_datetime.strftime('%b %d, %Y') }}
+          <span>· Meeting {{ b.meeting_datetime.strftime('%b %d') }}</span>
           {% endif %}
         </div>
       </div>
@@ -392,6 +573,13 @@
     </div>
     {% endfor %}
   </div>
+
+  <div id="no-results">
+    <p style="font-size:1.5rem;margin-bottom:0.75rem;">🔍</p>
+    <p style="font-weight:500;margin-bottom:0.35rem;color:var(--text-soft);">No briefings match your search</p>
+    <p>Try a different keyword or clear your filters.</p>
+  </div>
+
   {% endif %}
 </main>
 
@@ -400,25 +588,103 @@
   <div class="modal">
     <div class="modal-header">
       <span class="modal-title" id="modal-title"></span>
-      <button class="modal-close" onclick="closeModal()">✕</button>
+      <div class="modal-header-actions">
+        <a class="modal-dl" id="modal-dl-link" href="#">↓ .md</a>
+        <button class="modal-close" onclick="closeModal()">✕</button>
+      </div>
     </div>
     <div class="modal-body" id="modal-body"></div>
   </div>
 </div>
 
 <script>
-  async function openModal(id, title) {
-    document.getElementById('modal-title').textContent = title;
-    document.getElementById('modal-body').innerHTML = '<p style="color:var(--text-muted)">Loading…</p>';
-    document.getElementById('modal-overlay').classList.add('open');
+  const TOTAL = document.querySelectorAll('.briefing-card').length;
 
-    const res = await fetch(`/briefing/${id}`);
+  function applyFilters() {
+    const query  = document.getElementById('search').value.trim().toLowerCase();
+    const type   = document.getElementById('type-filter').value;
+    const sort   = document.getElementById('sort-order').value;
+    const list   = document.getElementById('briefing-list');
+    const cards  = Array.from(list.querySelectorAll('.briefing-card'));
+
+    // Sort
+    cards.sort((a, b) => {
+      const da = new Date(a.dataset.created);
+      const db = new Date(b.dataset.created);
+      return sort === 'oldest' ? da - db : db - da;
+    });
+    cards.forEach(c => list.appendChild(c));
+
+    // Filter + highlight
+    let visible = 0;
+    cards.forEach(card => {
+      const titleRaw  = card.querySelector('[id^="title-"]');
+      const rawTitle  = titleRaw.dataset.raw || titleRaw.textContent;
+      titleRaw.dataset.raw = rawTitle;   // cache original text
+
+      const matchType  = !type  || card.dataset.type === type;
+      const matchQuery = !query || rawTitle.toLowerCase().includes(query);
+
+      if (matchType && matchQuery) {
+        card.removeAttribute('data-hidden');
+        // Highlight matching text
+        if (query) {
+          const re = new RegExp(`(${query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
+          titleRaw.innerHTML = rawTitle.replace(re, '<mark>$1</mark>');
+        } else {
+          titleRaw.textContent = rawTitle;
+        }
+        visible++;
+      } else {
+        card.setAttribute('data-hidden', 'true');
+        titleRaw.textContent = rawTitle;
+      }
+    });
+
+    // Update count + no-results
+    const countEl = document.getElementById('results-count');
+    const noRes   = document.getElementById('no-results');
+    const isFiltered = query || type;
+
+    if (isFiltered) {
+      countEl.textContent = `${visible} of ${TOTAL}`;
+    } else {
+      countEl.textContent = '';
+    }
+
+    noRes.style.display = visible === 0 ? 'block' : 'none';
+
+    // Show/hide clear button
+    document.getElementById('clear-btn').classList.toggle('visible', !!isFiltered);
+  }
+
+  function clearFilters() {
+    document.getElementById('search').value = '';
+    document.getElementById('type-filter').value = '';
+    applyFilters();
+  }
+
+  // ===== MODAL =====
+  let currentModalId = null;
+
+  async function openModal(id, title) {
+    currentModalId = id;
+    document.getElementById('modal-title').textContent = title;
+    document.getElementById('modal-dl-link').href = `/download/${id}`;
+    document.getElementById('modal-body').innerHTML = '<p style="color:var(--text-muted);font-size:0.875rem;">Loading…</p>';
+    document.getElementById('modal-overlay').classList.add('open');
+    document.body.style.overflow = 'hidden';
+
+    const res  = await fetch(`/briefing/${id}`);
     const data = await res.json();
     document.getElementById('modal-body').innerHTML = marked.parse(data.content || '');
+    document.getElementById('modal-body').scrollTop = 0;
   }
 
   function closeModal() {
     document.getElementById('modal-overlay').classList.remove('open');
+    document.body.style.overflow = '';
+    currentModalId = null;
   }
 
   function closeOnOverlay(e) {
@@ -426,6 +692,14 @@
   }
 
   document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
+
+  // Focus search with Cmd/Ctrl+K
+  document.addEventListener('keydown', e => {
+    if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+      e.preventDefault();
+      document.getElementById('search')?.focus();
+    }
+  });
 </script>
 
 </body>
